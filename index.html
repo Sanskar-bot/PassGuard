@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Analyse your password's strength with entropy calculation, pattern detection, common wordlist checks, username similarity analysis, and brute-force time estimation. Fully offline." />
+  <title>PassGuard — Password Strength Analyzer</title>
+
+  <!-- Favicon (inline SVG as data URI) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="logo-badge">
+      <span class="dot"></span>
+      Fully Offline · No Data Sent
+    </div>
+    <h1>PassGuard</h1>
+    <p>Analyse password strength with entropy maths, wordlist detection, pattern analysis, and real brute-force time estimates.</p>
+  </header>
+
+  <!-- ── Input Card ───────────────────────────────────────────────────────── -->
+  <section class="input-section" aria-label="Password input">
+
+    <div class="glass-card">
+      <label class="input-label" for="password-input">Password to Analyse</label>
+      <div class="input-row">
+        <input
+          type="password"
+          id="password-input"
+          class="password-field"
+          placeholder="Type or paste your password…"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button class="icon-btn" id="toggle-visibility" aria-label="Toggle password visibility">Show</button>
+        <button class="icon-btn" id="copy-btn" aria-label="Copy password">Copy</button>
+      </div>
+
+      <!-- Strength bar -->
+      <div class="strength-bar-track" role="progressbar" aria-label="Password strength">
+        <div id="strength-bar"></div>
+      </div>
+      <div class="strength-label-row">
+        <span id="strength-label" class="strength-label">—</span>
+      </div>
+
+      <!-- Character class indicators -->
+      <div class="char-indicators" aria-label="Character class checklist">
+        <div class="char-ind inactive" id="ind-lower">
+          <span class="ind-icon">a</span> Lowercase
+        </div>
+        <div class="char-ind inactive" id="ind-upper">
+          <span class="ind-icon">A</span> Uppercase
+        </div>
+        <div class="char-ind inactive" id="ind-digit">
+          <span class="ind-icon">1</span> Numbers
+        </div>
+        <div class="char-ind inactive" id="ind-symbol">
+          <span class="ind-icon">#</span> Symbols
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <label class="input-label" for="username-input">Username (optional)</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="username-input"
+          class="text-field"
+          placeholder="Enter your username to check similarity…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Empty state ──────────────────────────────────────────────────────── -->
+  <div id="empty-state" aria-live="polite">
+    <div class="empty-state">
+      <div class="empty-icon">🔐</div>
+      <p>Enter a password above to see your full security report.</p>
+    </div>
+  </div>
+
+  <!-- ── Results ──────────────────────────────────────────────────────────── -->
+  <section id="results-panel" class="hidden" aria-live="polite" aria-label="Analysis results">
+
+    <div class="results-grid">
+
+      <!-- Left column: Score ring + breakdown -->
+      <div>
+        <div class="glass-card score-card">
+          <!-- SVG Score Ring -->
+          <div class="score-ring-wrap" role="img" aria-label="Password score ring">
+            <svg width="160" height="160" viewBox="0 0 120 120">
+              <circle id="score-ring-bg"   cx="60" cy="60" r="54" />
+              <circle id="score-ring-fill" cx="60" cy="60" r="54" />
+            </svg>
+            <div class="score-center">
+              <span id="score-value" aria-label="Score">0</span>
+              <span class="score-max">/100</span>
+            </div>
+          </div>
+
+          <div id="score-category" class="score-category">—</div>
+
+          <!-- Score breakdown bars -->
+          <div class="section-title">Score Breakdown</div>
+          <div id="breakdown-bars"></div>
+        </div>
+      </div>
+
+      <!-- Right column: stats, issues, crack time, suggestions -->
+      <div>
+
+        <!-- Stat cards -->
+        <div class="stats-grid" aria-label="Password statistics">
+          <div class="stat-card">
+            <div class="stat-label">Length</div>
+            <div class="stat-value" id="stat-length">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Entropy</div>
+            <div class="stat-value" id="stat-entropy">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Charset Size</div>
+            <div class="stat-value" id="stat-charset">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Variety</div>
+            <div class="stat-value" id="stat-variety">—</div>
+          </div>
+        </div>
+
+        <!-- Issues panel (hidden when no issues) -->
+        <div id="issues-panel" class="issues-panel hidden" role="alert" aria-label="Security issues">
+          <div class="issues-header">⚠ Issues Found</div>
+          <ul id="issues-list" class="issues-list"></ul>
+        </div>
+
+        <!-- Crack time table -->
+        <div class="glass-card" style="padding: var(--sp-lg); margin-bottom: var(--sp-lg);">
+          <div class="section-title">Estimated Crack Time</div>
+          <table class="crack-table" aria-label="Brute-force crack time estimates">
+            <thead>
+              <tr>
+                <th>Attack Scenario</th>
+                <th style="text-align:right;">Est. Time</th>
+              </tr>
+            </thead>
+            <tbody id="crack-time-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="glass-card" style="padding: var(--sp-lg);">
+          <div class="section-title">Suggestions</div>
+          <div id="suggestions-list" class="suggestions-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Password Generator ────────────────────────────────────────────────── -->
+  <section class="generator-section" aria-label="Password generator">
+    <h2 class="section-heading">Password Generator</h2>
+
+    <div class="generator-grid">
+
+      <!-- Controls -->
+      <div class="glass-card">
+        <div class="gen-controls">
+
+          <div class="slider-row">
+            <span class="slider-label">Length</span>
+            <input type="range" id="gen-length" min="8" max="64" value="16"
+                   aria-label="Generated password length" />
+            <span class="slider-value" id="gen-length-display">16</span>
+          </div>
+
+          <div class="checkbox-grid">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-lower" checked /> Lowercase (a-z)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-upper" checked /> Uppercase (A-Z)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-digits" checked /> Numbers (0-9)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-symbols" checked /> Symbols (!@#…)
+            </label>
+          </div>
+
+          <button class="btn-primary" id="gen-btn" aria-label="Generate new password">
+            ⚡ Generate Password
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="glass-card">
+        <div class="gen-output-wrap">
+          <div class="gen-output-label">Generated Password</div>
+          <textarea id="gen-output" rows="3" readonly aria-label="Generated password output"></textarea>
+        </div>
+
+        <div class="gen-actions">
+          <button class="btn-secondary" id="gen-copy-btn" aria-label="Copy generated password">
+            📋 Copy
+          </button>
+          <button class="btn-secondary" id="gen-use-btn" aria-label="Analyse generated password">
+            🔍 Analyse This
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <p>
+      PassGuard runs entirely in your browser — your password is <strong>never sent anywhere</strong>.
+      Open the browser console and run <code>runTests()</code> to see built-in test cases.
+    </p>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<!-- ES Module entry point -->
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
