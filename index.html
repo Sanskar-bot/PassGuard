@@ -175,6 +175,167 @@
     </div>
   </section>
 
+  <!-- ── Advanced Personalized Attack Analysis ─────────────────────────────── -->
+  <section id="personal-attack-section" class="hidden personal-attack-section" aria-label="Advanced personalized attack analysis">
+
+    <h2 class="section-heading">🎯 Advanced Personalized Attack Analysis</h2>
+
+    <!-- Step 2: CTA card — always visible when password is entered -->
+    <div id="personal-cta-card" class="glass-card personal-cta-card">
+      <div class="personal-cta-inner">
+        <div class="personal-cta-icon">🕵️</div>
+        <div class="personal-cta-text">
+          <div class="personal-cta-title">Simulate a Targeted Attack</div>
+          <p class="personal-cta-desc">
+            Test your password against a personalised dictionary generated from information
+            someone who knows you might use — names, birthdays, pets, and more.
+            All fields are optional. Nothing is sent anywhere.
+          </p>
+        </div>
+        <button id="show-personal-form-btn" class="btn-personal-run" aria-label="Run advanced personalized analysis">
+          Run Advanced Analysis
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Profile form (hidden until button clicked) -->
+    <div id="personal-form-card" class="glass-card hidden personal-form-card">
+      <div class="personal-form-header">
+        <span class="personal-form-icon">👤</span>
+        <div>
+          <div class="personal-form-title">Enter Personal Information</div>
+          <div class="personal-form-subtitle">All fields are optional — fill in what you know.</div>
+        </div>
+      </div>
+
+      <div class="personal-form-grid">
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-first-name">First Name</label>
+          <input type="text" id="pa-first-name" class="personal-field-input" placeholder="e.g. Sanskar" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-last-name">Last Name</label>
+          <input type="text" id="pa-last-name" class="personal-field-input" placeholder="e.g. Phougat" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-nickname">Nickname</label>
+          <input type="text" id="pa-nickname" class="personal-field-input" placeholder="e.g. Sandy" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-username">Username</label>
+          <input type="text" id="pa-username" class="personal-field-input" placeholder="e.g. sanskar_01" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-dob">Date of Birth</label>
+          <input type="date" id="pa-dob" class="personal-field-input personal-field-date" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-partner">Partner's Name</label>
+          <input type="text" id="pa-partner" class="personal-field-input" placeholder="e.g. Priya" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-pet">Pet's Name</label>
+          <input type="text" id="pa-pet" class="personal-field-input" placeholder="e.g. Bruno" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-company">Company Name</label>
+          <input type="text" id="pa-company" class="personal-field-input" placeholder="e.g. TechCorp" autocomplete="off" spellcheck="false" />
+        </div>
+
+      </div>
+
+      <div class="personal-form-actions">
+        <button id="run-personal-analysis-btn" class="btn-primary personal-generate-btn" aria-label="Generate dictionary and analyse">
+          ⚡ Generate &amp; Analyse
+        </button>
+        <button id="cancel-personal-btn" class="btn-secondary" aria-label="Cancel">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="personal-loading-card" class="glass-card hidden personal-loading-card" aria-live="polite">
+      <div class="personal-loading-inner">
+        <div class="personal-spinner"></div>
+        <div class="personal-loading-text">
+          <div class="personal-loading-title">Generating personalised dictionary…</div>
+          <div class="personal-loading-sub">Analysing name combinations, dates, and patterns</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: Results card -->
+    <div id="personal-results-card" class="glass-card hidden personal-results-card" aria-live="polite">
+
+      <!-- Top stat row -->
+      <div class="personal-stats-row">
+
+        <div class="personal-stat-card">
+          <div class="personal-stat-label">Dictionary Size</div>
+          <div class="personal-stat-value" id="pa-dict-size">—</div>
+          <div class="personal-stat-sub">passwords generated</div>
+        </div>
+
+        <div class="personal-stat-card" id="pa-found-card">
+          <div class="personal-stat-label">Password Found</div>
+          <div class="personal-stat-value" id="pa-found">—</div>
+          <div class="personal-stat-sub" id="pa-found-sub">in dictionary</div>
+        </div>
+
+        <div class="personal-stat-card" id="pa-rank-card">
+          <div class="personal-stat-label">Attack Rank</div>
+          <div class="personal-stat-value" id="pa-rank">—</div>
+          <div class="personal-stat-sub">guess number</div>
+        </div>
+
+      </div>
+
+      <!-- Personal Attack Score bar -->
+      <div class="personal-score-section">
+        <div class="personal-score-header">
+          <span class="personal-score-label">Personalized Attack Resistance</span>
+          <span class="personal-score-value" id="pa-score-value">—</span>
+        </div>
+        <div class="personal-score-track" role="progressbar" aria-label="Personal attack resistance score">
+          <div class="personal-score-fill" id="pa-score-fill"></div>
+        </div>
+      </div>
+
+      <!-- Risk level badge -->
+      <div class="personal-risk-row">
+        <span class="personal-risk-label">Risk Level</span>
+        <span class="personal-risk-badge" id="pa-risk-badge">—</span>
+      </div>
+
+      <!-- Explanation list -->
+      <div class="personal-explanation" id="pa-explanation">
+        <div class="personal-explanation-title">⚡ Analysis Details</div>
+        <ul class="personal-explanation-list" id="pa-explanation-list"></ul>
+      </div>
+
+      <!-- Actions -->
+      <div class="personal-results-actions">
+        <button id="download-dict-btn" class="btn-download-dict" aria-label="Download personalized dictionary as text file">
+          ⬇️ Download Dictionary
+        </button>
+        <button id="rerun-personal-btn" class="btn-secondary personal-rerun-btn" aria-label="Edit profile and re-run analysis">
+          ✏️ Edit &amp; Re-run
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
   <!-- ── Password Generator ────────────────────────────────────────────────── -->
   <section class="generator-section" aria-label="Password generator">
     <h2 class="section-heading">Password Generator</h2>

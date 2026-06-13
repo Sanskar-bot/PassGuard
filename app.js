@@ -22,6 +22,8 @@ import { estimateCrackTimes }              from "./modules/bruteforce.js";
 import { computeScore, CATEGORIES }        from "./modules/scorer.js";
 import { generateSuggestions }             from "./modules/suggestions.js";
 import { generatePassword }                from "./modules/generator.js";
+import { runPersonalizedAnalysis,
+         downloadDictionary }              from "./modules/personalDictionary.js";
 
 // ── DOM References ────────────────────────────────────────────────────────────
 const passwordInput   = document.getElementById("password-input");
@@ -70,9 +72,35 @@ const genUpper         = document.getElementById("gen-upper");
 const genDigits        = document.getElementById("gen-digits");
 const genSymbols       = document.getElementById("gen-symbols");
 
+// ── Personal Attack Analysis DOM refs ─────────────────────────────────────────
+const personalSection      = document.getElementById("personal-attack-section");
+const personalCtaCard      = document.getElementById("personal-cta-card");
+const showPersonalFormBtn  = document.getElementById("show-personal-form-btn");
+const personalFormCard     = document.getElementById("personal-form-card");
+const runPersonalBtn       = document.getElementById("run-personal-analysis-btn");
+const cancelPersonalBtn    = document.getElementById("cancel-personal-btn");
+const personalLoadingCard  = document.getElementById("personal-loading-card");
+const personalResultsCard  = document.getElementById("personal-results-card");
+const rerunPersonalBtn     = document.getElementById("rerun-personal-btn");
+const downloadDictBtn      = document.getElementById("download-dict-btn");
+
+// Personal results elements
+const paDictSize     = document.getElementById("pa-dict-size");
+const paFound        = document.getElementById("pa-found");
+const paFoundSub     = document.getElementById("pa-found-sub");
+const paFoundCard    = document.getElementById("pa-found-card");
+const paRank         = document.getElementById("pa-rank");
+const paRankCard     = document.getElementById("pa-rank-card");
+const paScoreValue   = document.getElementById("pa-score-value");
+const paScoreFill    = document.getElementById("pa-score-fill");
+const paRiskBadge    = document.getElementById("pa-risk-badge");
+const paExplanList   = document.getElementById("pa-explanation-list");
+
 // ── State ─────────────────────────────────────────────────────────────────────
-let debounceTimer = null;
-let passwordVisible = false;
+let debounceTimer    = null;
+let passwordVisible  = false;
+let lastDictionary   = [];    // holds the last generated dictionary for download
+let lastProfileName  = '';    // used in the download filename
 
 // ── SVG Score Ring constants ──────────────────────────────────────────────────
 // The ring is a circle with r=54, so circumference ≈ 339.3
@@ -107,6 +135,7 @@ function analyse() {
   if (password.length === 0) {
     resultsPanel.classList.add("hidden");
     emptyState.classList.remove("hidden");
+    personalSection.classList.add("hidden");
     return;
   }
 
@@ -114,11 +143,11 @@ function analyse() {
   emptyState.classList.add("hidden");
 
   // 1. Run all modules
-  const strength  = analyseStrength(password);
-  const patterns  = detectPatterns(password);
-  const wordlist  = checkWordlist(password);
-  const ucheck    = checkUsername(password, username);
-  const scoreRes  = computeScore(strength, wordlist, patterns, ucheck);
+  const strength   = analyseStrength(password);
+  const patterns   = detectPatterns(password);
+  const wordlist   = checkWordlist(password);
+  const ucheck     = checkUsername(password, username);
+  const scoreRes   = computeScore(strength, wordlist, patterns, ucheck);
   const crackTimes = estimateCrackTimes(strength.charsetSize, strength.length);
   const suggestions = generateSuggestions(strength, wordlist, patterns, ucheck, scoreRes);
 
@@ -130,6 +159,9 @@ function analyse() {
   renderCrackTimes(crackTimes);
   renderSuggestions(suggestions);
   renderBreakdown(scoreRes.breakdown);
+
+  // 3. Show personalized attack section (reset to CTA state)
+  showPersonalAttackSection();
 }
 
 // ── Score ring ────────────────────────────────────────────────────────────────
@@ -258,6 +290,73 @@ function runGenerator() {
   }
 }
 
+// ── Personal Attack Analysis helpers ─────────────────────────────────────────
+
+/**
+ * Reveal the personal attack section in its initial CTA state.
+ * Resets all sub-panels so re-running a new password starts clean.
+ */
+function showPersonalAttackSection() {
+  personalSection.classList.remove("hidden");
+  personalFormCard.classList.add("hidden");
+  personalLoadingCard.classList.add("hidden");
+  personalResultsCard.classList.add("hidden");
+  personalCtaCard.classList.remove("hidden");
+  // Clear stale results
+  lastDictionary  = [];
+  lastProfileName = '';
+}
+
+/**
+ * Render the personalized analysis results into the results card.
+ * @param {object} results  Return value of runPersonalizedAnalysis()
+ */
+function renderPersonalResults(results) {
+  const { dictSize, found, rank, score, riskLevel, explanation } = results;
+
+  // Dictionary size
+  paDictSize.textContent = dictSize.toLocaleString();
+
+  // Found / not found
+  paFound.textContent = found ? 'Yes' : 'No';
+  paFoundSub.textContent = found ? 'password found in dictionary' : 'not found in dictionary';
+  paFoundCard.className = `personal-stat-card ${found ? 'pa-danger' : 'pa-safe'}`;
+  paFound.style.color   = found ? 'var(--c-danger)' : 'var(--c-safe)';
+
+  // Rank
+  if (found && rank !== null) {
+    paRank.textContent = `#${rank.toLocaleString()}`;
+    paRankCard.className = rank <= 1000 ? 'personal-stat-card pa-danger'
+                         : rank <= 5000  ? 'personal-stat-card pa-warning'
+                         : 'personal-stat-card';
+  } else {
+    paRank.textContent = 'N/A';
+    paRank.style.color = 'var(--text-muted)';
+    paRankCard.className = 'personal-stat-card pa-safe';
+  }
+
+  // Score bar
+  paScoreValue.textContent = `${score}/100`;
+  // Colour: red → yellow → green mapped to 0–100
+  const hue = Math.round(score * 1.2); // 0=red(0°), 100=green(120°)
+  paScoreFill.style.width      = `${score}%`;
+  paScoreFill.style.background = `hsl(${hue},70%,50%)`;
+
+  // Risk badge
+  paRiskBadge.textContent = `${riskLevel.emoji} ${riskLevel.label}`;
+  paRiskBadge.className   = `personal-risk-badge ${riskLevel.cssClass}`;
+
+  // Explanation
+  paExplanList.innerHTML = explanation
+    .map((e, i) => `<li style="animation-delay:${i * 50}ms">${e}</li>`)
+    .join('');
+
+  // Show results card, hide form + loading
+  personalFormCard.classList.add('hidden');
+  personalLoadingCard.classList.add('hidden');
+  personalResultsCard.classList.remove('hidden');
+}
+
 // ── Event Listeners ───────────────────────────────────────────────────────────
 
 // Password input with debounce
@@ -306,6 +405,78 @@ document.getElementById("copy-btn").addEventListener("click", () => {
   if (passwordInput.value) copyToClipboard(passwordInput.value, document.getElementById("copy-btn"));
 });
 
+// ── Personal attack event listeners ──────────────────────────────────────────
+
+// Show profile form
+showPersonalFormBtn.addEventListener("click", () => {
+  personalCtaCard.classList.add("hidden");
+  personalResultsCard.classList.add("hidden");
+  personalLoadingCard.classList.add("hidden");
+  personalFormCard.classList.remove("hidden");
+  // Pre-fill username from the existing username input
+  const usernameVal = usernameInput.value.trim();
+  if (usernameVal && !document.getElementById("pa-username").value) {
+    document.getElementById("pa-username").value = usernameVal;
+  }
+});
+
+// Cancel — back to CTA
+cancelPersonalBtn.addEventListener("click", () => {
+  personalFormCard.classList.add("hidden");
+  personalCtaCard.classList.remove("hidden");
+});
+
+// Re-run — show the form again
+rerunPersonalBtn.addEventListener("click", () => {
+  personalResultsCard.classList.add("hidden");
+  personalCtaCard.classList.add("hidden");
+  personalFormCard.classList.remove("hidden");
+});
+
+// Run analysis
+runPersonalBtn.addEventListener("click", async () => {
+  const password = passwordInput.value;
+  if (!password) return;
+
+  const profile = {
+    name:     document.getElementById("pa-first-name").value.trim(),
+    surname:  document.getElementById("pa-last-name").value.trim(),
+    nick:     document.getElementById("pa-nickname").value.trim(),
+    username: document.getElementById("pa-username").value.trim(),
+    dob:      document.getElementById("pa-dob").value,
+    partner:  document.getElementById("pa-partner").value.trim(),
+    pet:      document.getElementById("pa-pet").value.trim(),
+    company:  document.getElementById("pa-company").value.trim(),
+  };
+
+  // Show loading
+  personalFormCard.classList.add("hidden");
+  personalLoadingCard.classList.remove("hidden");
+
+  // Disable button during run to prevent double-click
+  runPersonalBtn.disabled = true;
+
+  try {
+    const results = await runPersonalizedAnalysis(password, profile);
+    lastDictionary  = results.dictionary;
+    lastProfileName = profile.name || 'personal';
+    renderPersonalResults(results);
+  } catch (err) {
+    console.error('[PersonalAttack] Analysis failed:', err);
+    personalLoadingCard.classList.add("hidden");
+    personalCtaCard.classList.remove("hidden");
+  } finally {
+    runPersonalBtn.disabled = false;
+  }
+});
+
+// Download dictionary
+downloadDictBtn.addEventListener("click", () => {
+  if (lastDictionary.length > 0) {
+    downloadDictionary(lastDictionary, lastProfileName);
+  }
+});
+
 // ── Test cases (run in console with: runTests()) ──────────────────────────────
 window.runTests = function() {
   const cases = [
@@ -336,3 +507,46 @@ window.runTests = function() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 // Pre-generate a password so the generator panel isn't empty on load
 runGenerator();
+
+// Expose personal test helper to console
+window.runPersonalTests = async function() {
+  const { generatePersonalDictionary } = await import('./modules/personalDictionaryGenerator.js');
+  const { findPasswordInDictionary, computePersonalScore } = await import('./modules/personalDictionaryScorer.js');
+
+  console.group('🎯 Personal Dictionary — Test Suite');
+
+  const cases = [
+    {
+      label:   'Sanskar2004@ (strong personal pattern)',
+      pwd:     'Sanskar2004@',
+      profile: { name: 'Sanskar', dob: '2004-01-01' },
+      expectFound: true,
+    },
+    {
+      label:   'X9#mK2!pL7@qZ (random — should not be found)',
+      pwd:     'X9#mK2!pL7@qZ',
+      profile: { name: 'Sanskar', dob: '2004-01-01' },
+      expectFound: false,
+    },
+    {
+      label:   'Empty profile — small dictionary',
+      pwd:     'anything',
+      profile: {},
+      expectFound: false,
+    },
+  ];
+
+  for (const tc of cases) {
+    const dict = generatePersonalDictionary(tc.profile);
+    const { found, rank } = findPasswordInDictionary(tc.pwd, dict);
+    const score = computePersonalScore(found, rank, dict.length);
+    const pass  = found === tc.expectFound;
+    console[pass ? 'log' : 'warn'](
+      `${pass ? '✅' : '❌'} ${tc.label}`,
+      `| Dict: ${dict.length} | Found: ${found} | Rank: ${rank ?? 'N/A'} | Score: ${score}/100`
+    );
+  }
+
+  console.groupEnd();
+};
+
