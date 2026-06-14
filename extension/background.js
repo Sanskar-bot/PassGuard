@@ -176,3 +176,4 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   tabScores.delete(tabId);
 });
+

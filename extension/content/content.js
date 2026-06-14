@@ -55,7 +55,7 @@
     if (vzDictReady || vzDictLoading) return;
     vzDictLoading = true;
     try {
-      const cache = await import(chrome.runtime.getURL('../shared/dictCache.js'));
+      const cache = await import(chrome.runtime.getURL('modules/dictCache.js'));
       await cache.warmCache();
       vzDictLookup = cache.lookup;
       vzDictReady  = true;
@@ -77,12 +77,12 @@
     if (analysisReady) return;
     try {
       const [strength, patterns, wordlist, username, bruteforce, scorer] = await Promise.all([
-        import(chrome.runtime.getURL('../shared/strength.js')),
-        import(chrome.runtime.getURL('../shared/patterns.js')),
-        import(chrome.runtime.getURL('../shared/wordlist.js')),
-        import(chrome.runtime.getURL('../shared/username.js')),
-        import(chrome.runtime.getURL('../shared/bruteforce.js')),
-        import(chrome.runtime.getURL('../shared/scorer.js')),
+        import(chrome.runtime.getURL('modules/strength.js')),
+        import(chrome.runtime.getURL('modules/patterns.js')),
+        import(chrome.runtime.getURL('modules/wordlist.js')),
+        import(chrome.runtime.getURL('modules/username.js')),
+        import(chrome.runtime.getURL('modules/bruteforce.js')),
+        import(chrome.runtime.getURL('modules/scorer.js')),
       ]);
       analyseStrength    = strength.analyseStrength;
       detectPatterns     = patterns.detectPatterns;
@@ -768,3 +768,4 @@
   } catch (_) {}
 
 })();
+

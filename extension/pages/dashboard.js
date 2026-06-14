@@ -14,7 +14,7 @@
  * 
  */
 
-import { getProfile, getDictMeta, getHistory } from '../../shared/profileStore.js';
+import { getProfile, getDictMeta, getHistory } from '../modules/profileStore.js';
 
 //  DOM refs 
 const $ = (id) => document.getElementById(id);
@@ -322,3 +322,4 @@ function esc(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+

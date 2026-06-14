@@ -17,7 +17,7 @@
  * 
  */
 
-import { generatePersonalDictionary } from '../../shared/personalDictionaryGenerator.js';
+import { generatePersonalDictionary } from '../modules/personalDictionaryGenerator.js';
 
 self.onmessage = async function (event) {
   const { type, profile, profileHash = '' } = event.data;
@@ -46,3 +46,4 @@ self.onmessage = async function (event) {
     self.postMessage({ type: 'ERROR', message: err.message });
   }
 };
+

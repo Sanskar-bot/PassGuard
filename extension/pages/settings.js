@@ -50,3 +50,4 @@ $('save-btn').addEventListener('click', () => {
     setTimeout(() => status.classList.remove('visible'), 2500);
   });
 });
+

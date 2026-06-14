@@ -16,7 +16,7 @@ import {
   isDictionaryStale,
   exportProfile,
   profileHash,
-} from '../../shared/profileStore.js';
+} from '../modules/profileStore.js';
 
 //  Helpers 
 const $ = (id) => document.getElementById(id);
@@ -400,3 +400,4 @@ async function init() {
 }
 
 init().catch(console.error);
+
