@@ -212,7 +212,7 @@
         <div class="vz-bar-fill" id="vz-bar" style="width:0%"></div>
       </div>
 
-      <button class="vz-toggle-btn" id="vz-toggle-btn" style="display:none">View more </button>
+      <button class="vz-toggle-btn" id="vz-toggle-btn" style="display:none">Details <span class="vz-caret">&#9660;</span></button>
 
       <!-- Full analysis (hidden by default) -->
       <div class="vz-analysis" id="vz-analysis" style="display:none">
@@ -247,13 +247,13 @@
 
         <!-- All issues with explanations -->
         <div class="vz-section" id="vz-issues-section" style="display:none">
-          <div class="vz-section-title"> Issues Found</div>
+          <div class="vz-section-title">Issues Found</div>
           <div class="vz-issues-list" id="vz-issues-list"></div>
         </div>
 
         <!-- Crack time -->
         <div class="vz-section" id="vz-crack-section" style="display:none">
-          <div class="vz-section-title"> Estimated Crack Time</div>
+          <div class="vz-section-title">Online Login Resistance</div>
           <div class="vz-crack-list" id="vz-crack-list"></div>
         </div>
 
@@ -270,12 +270,15 @@
       e.stopPropagation();
       e.preventDefault();
       const isExpanded = analysis.style.display !== 'none';
+      const caret = toggleBtn.querySelector('.vz-caret');
       if (isExpanded) {
         analysis.style.display = 'none';
-        toggleBtn.textContent = 'View more ';
+        toggleBtn.firstChild.textContent = 'Details ';
+        if (caret) caret.innerHTML = '&#9660;';
       } else {
         analysis.style.display = '';
-        toggleBtn.textContent = 'View less ';
+        toggleBtn.firstChild.textContent = 'Collapse ';
+        if (caret) caret.innerHTML = '&#9650;';
       }
     });
 
@@ -368,54 +371,60 @@
       issuesSection.style.display = '';
     }
 
-    //  Crack times 
+    //  Crack times — only show the scenario relevant to THIS context (web login)
     try {
-      const crackTimes    = estimateCrackTimes(strength.charsetSize, strength.length);
-      const crackSection  = shadow.getElementById('vz-crack-section');
-      const crackList     = shadow.getElementById('vz-crack-list');
-      if (crackTimes && crackTimes.length > 0) {
-        crackList.innerHTML = crackTimes.map(ct => `
+      const allCrackTimes  = estimateCrackTimes(strength.charsetSize, strength.length);
+      const crackSection   = shadow.getElementById('vz-crack-section');
+      const crackList      = shadow.getElementById('vz-crack-list');
+      // For a web login widget, only Online (throttled) is relevant.
+      // Offline GPU cracking applies to data breach scenarios, not website logins.
+      const ct = allCrackTimes.find(c => c.id === 'online_throttled') || allCrackTimes[0];
+      if (ct) {
+        crackList.innerHTML = `
           <div class="vz-crack-row">
             <div class="vz-crack-scenario">
               <span class="vz-crack-name">${ct.label}</span>
               <span class="vz-crack-desc">${ct.desc || ''}</span>
             </div>
             <span class="vz-crack-time vz-crack-${ct.severity}">${ct.display}</span>
-          </div>`).join('');
+          </div>`;
         crackSection.style.display = '';
       }
     } catch (_) { /* bruteforce module optional */ }
 
-    //  Personalized risk 
+    //  Personalized risk
     const personalEl = shadow.getElementById('vz-personal-risk');
     if (personalResult) {
       const { found, rank } = personalResult;
-      let riskText, riskClass, riskReason;
+      let badgeLabel, badgeClass, headline, riskReason;
       if (found) {
         if (rank <= 100) {
-          riskText   = ` Targeted Risk: Critical  #${rank} targeted guess`;
-          riskReason = 'This exact password (or a variant) is within the top 100 most likely guesses for you specifically. Score reduced by 50 pts.';
-          riskClass  = 'vz-risk-critical';
+          badgeLabel = 'CRITICAL';  badgeClass = 'vz-badge-critical';
+          headline   = `Targeted Risk — guess #${rank}`;
+          riskReason = 'This password appears within the first 100 guesses a targeted attacker would make. Score penalised by 50 pts.';
         } else if (rank <= 1000) {
-          riskText   = ` Targeted Risk: High  #${rank} targeted guess`;
-          riskReason = 'An attacker who knows personal details about you would guess this early in their attack. Score reduced by 35 pts.';
-          riskClass  = 'vz-risk-high';
+          badgeLabel = 'HIGH';      badgeClass = 'vz-badge-high';
+          headline   = `Targeted Risk — guess #${rank}`;
+          riskReason = 'An attacker with knowledge of your personal details would reach this password early. Score penalised by 35 pts.';
         } else if (rank <= 5000) {
-          riskText   = ` Targeted Risk: Medium  #${rank} targeted guess`;
-          riskReason = 'This password contains patterns derived from your profile and appears in the mid-range of a targeted attack list. Score reduced by 20 pts.';
-          riskClass  = 'vz-risk-medium';
+          badgeLabel = 'MEDIUM';    badgeClass = 'vz-badge-medium';
+          headline   = `Targeted Risk — guess #${rank}`;
+          riskReason = 'This password matches a mid-range pattern in your personalised attack profile. Score penalised by 20 pts.';
         } else {
-          riskText   = ` Targeted Risk: Low  #${rank} targeted guess`;
-          riskReason = 'Found in your personalized dictionary, but ranked low  still detectable by a determined targeted attacker. Score reduced by 10 pts.';
-          riskClass  = 'vz-risk-low';
+          badgeLabel = 'LOW';       badgeClass = 'vz-badge-low';
+          headline   = `Targeted Risk — guess #${rank}`;
+          riskReason = 'Found in your personalised dictionary at a low rank — still detectable by a persistent attacker. Score penalised by 10 pts.';
         }
       } else {
-        riskText   = ' Targeted Attack: Resistant';
-        riskReason = 'This password does not match any entry in your personalized attack dictionary.';
-        riskClass  = 'vz-risk-safe';
+        badgeLabel = 'RESISTANT';  badgeClass = 'vz-badge-safe';
+        headline   = 'Not in personalised attack profile';
+        riskReason = 'This password does not match any entry generated from your personal information.';
       }
       personalEl.innerHTML = `
-        <div class="vz-risk-header ${riskClass}">${riskText}</div>
+        <div class="vz-risk-row">
+          <span class="vz-risk-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="vz-risk-headline">${headline}</span>
+        </div>
         <div class="vz-risk-reason">${riskReason}</div>
       `;
       personalEl.style.display = '';
@@ -590,26 +599,32 @@
         transition: width 0.4s ease, background 0.3s ease;
       }
 
-      /*  Toggle Button  */
+      /* ── Toggle Button ── */
       .vz-toggle-btn {
         width: 100%;
         background: transparent;
         border: none;
-        color: #64748b;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        color: #475569;
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 4px 0 2px 0;
+        letter-spacing: 0.6px;
+        padding: 5px 0 2px 0;
         cursor: pointer;
         transition: color 0.2s;
         text-align: center;
         font-family: inherit;
         outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
       }
-      .vz-toggle-btn:hover { color: #e2e8f0; }
+      .vz-toggle-btn:hover { color: #94a3b8; }
+      .vz-caret { font-size: 8px; opacity: 0.7; }
 
-      /*  Stats row  */
+      /* ── Stats row ── */
       .vz-stats-row {
         display: flex; gap: 6px; margin-bottom: 7px;
       }
@@ -631,7 +646,7 @@
         font-weight: 600; margin-top: 1px;
       }
 
-      /*  Char chips  */
+      /* ── Char chips ── */
       .vz-chips { display: flex; gap: 5px; margin-bottom: 9px; }
       .vz-chip {
         flex: 1; text-align: center; padding: 3px 0;
@@ -651,16 +666,16 @@
         color: rgba(239,68,68,0.5);
       }
 
-      /*  Sections  */
+      /* ── Sections ── */
       .vz-section { margin-bottom: 8px; }
       .vz-section-title {
         font-size: 9px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: 0.6px; color: #475569;
+        letter-spacing: 0.6px; color: #334155;
         margin-bottom: 5px; padding-bottom: 3px;
         border-bottom: 1px solid rgba(255,255,255,0.05);
       }
 
-      /*  Issues list  */
+      /* ── Issues list ── */
       .vz-issues-list { display: flex; flex-direction: column; gap: 4px; }
 
       .vz-issue {
@@ -676,8 +691,8 @@
       .vz-issue-low    { background: rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.15); }
 
       .vz-issue-dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        flex-shrink: 0; margin-top: 3px;
+        width: 5px; height: 5px; border-radius: 50%;
+        flex-shrink: 0; margin-top: 4px;
       }
       .vz-issue-high   .vz-issue-dot { background: #ef4444; box-shadow: 0 0 5px rgba(239,68,68,0.7); }
       .vz-issue-medium .vz-issue-dot { background: #f59e0b; box-shadow: 0 0 5px rgba(245,158,11,0.7); }
@@ -697,47 +712,56 @@
         border: 1px solid rgba(34,197,94,0.2); border-radius: 6px;
       }
 
-      /*  Crack times  */
+      /* ── Crack times ── */
       .vz-crack-list { display: flex; flex-direction: column; gap: 3px; }
       .vz-crack-row {
         display: flex; align-items: center; justify-content: space-between;
-        gap: 8px; padding: 4px 6px;
+        gap: 8px; padding: 6px 8px;
         background: rgba(255,255,255,0.025);
         border: 1px solid rgba(255,255,255,0.045);
-        border-radius: 5px;
+        border-radius: 6px;
       }
       .vz-crack-scenario { display: flex; flex-direction: column; gap: 1px; flex: 1; }
       .vz-crack-name   { font-size: 10px; font-weight: 700; color: #94a3b8; }
       .vz-crack-desc   { font-size: 9px; color: #475569; }
-      .vz-crack-time   { font-size: 11px; font-weight: 800; font-family: monospace;
+      .vz-crack-time   { font-size: 11px; font-weight: 800; font-family: 'SF Mono',ui-monospace,monospace;
                           white-space: nowrap; text-align: right; }
       .vz-crack-danger   { color: #ef4444; }
       .vz-crack-warning  { color: #f59e0b; }
       .vz-crack-moderate { color: #84cc16; }
       .vz-crack-safe     { color: #22c55e; }
 
-      /*  Personalized risk  */
+      /* ── Personalized risk — badge pill system ── */
       .vz-personal-risk {
         margin-top: 6px;
-        border-radius: 6px;
+        border-radius: 7px;
         overflow: hidden;
         border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.02);
       }
-      .vz-risk-header {
-        font-size: 11px; font-weight: 700;
-        padding: 6px 10px;
+      .vz-risk-row {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 10px 4px;
+      }
+      .vz-risk-badge {
+        font-size: 9px; font-weight: 800;
+        letter-spacing: 0.8px; text-transform: uppercase;
+        padding: 2px 7px; border-radius: 4px;
+        flex-shrink: 0;
+      }
+      .vz-risk-headline {
+        font-size: 11px; font-weight: 600; color: #94a3b8;
       }
       .vz-risk-reason {
-        font-size: 10px; color: #64748b; line-height: 1.4;
-        padding: 5px 10px 7px;
-        background: rgba(255,255,255,0.025);
-        border-top: 1px solid rgba(255,255,255,0.05);
+        font-size: 10px; color: #475569; line-height: 1.4;
+        padding: 3px 10px 8px;
       }
-      .vz-risk-critical { background: rgba(239,68,68,0.12); color: #fca5a5; }
-      .vz-risk-high     { background: rgba(245,158,11,0.12); color: #fcd34d; }
-      .vz-risk-medium   { background: rgba(245,158,11,0.08); color: #fde68a; }
-      .vz-risk-low      { background: rgba(59,130,246,0.10); color: #93c5fd; }
-      .vz-risk-safe     { background: rgba(34,197,94,0.10);  color: #86efac; }
+      /* Badge colour variants */
+      .vz-badge-critical { background: rgba(239,68,68,0.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+      .vz-badge-high     { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+      .vz-badge-medium   { background: rgba(234,179,8,0.12);  color: #fef08a; border: 1px solid rgba(234,179,8,0.22); }
+      .vz-badge-low      { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.22); }
+      .vz-badge-safe     { background: rgba(34,197,94,0.12);  color: #86efac; border: 1px solid rgba(34,197,94,0.22); }
     `;
   }
 

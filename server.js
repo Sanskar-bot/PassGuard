@@ -81,9 +81,9 @@ server.listen(PORT, "127.0.0.1", () => {
 
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
-    console.error(`\n  ✗ Port ${PORT} is already in use. Try: node server.js ${PORT + 1}\n`);
+    console.error(`\n   Port ${PORT} is already in use. Try: node server.js ${PORT + 1}\n`);
   } else {
-    console.error("\n  ✗ Server error:", err.message, "\n");
+    console.error("\n   Server error:", err.message, "\n");
   }
   process.exit(1);
 });
