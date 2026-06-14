@@ -1,11 +1,11 @@
 /**
- * dashboard.css — VaultZero Security Dashboard
+ * dashboard.css  VaultZero Security Dashboard
  * Full-page dark cybersecurity theme.
  * Mirrors the VaultZero design system: cyan/violet accents, glassmorphism,
  * subtle grid, animated glow.
  */
 
-/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+/*  Reset & Base  */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -50,7 +50,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ── Background decoration ────────────────────────────────────────────────── */
+/*  Background decoration  */
 .bg-grid {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
@@ -65,7 +65,7 @@ body {
   z-index: 0; pointer-events: none;
 }
 
-/* ── Header ───────────────────────────────────────────────────────────────── */
+/*  Header  */
 .dash-header {
   position: sticky; top: 0; z-index: 100;
   background: rgba(7,11,23,0.85);
@@ -128,7 +128,7 @@ body {
   white-space: nowrap;
 }
 
-/* ── Main Layout ──────────────────────────────────────────────────────────── */
+/*  Main Layout  */
 .dash-main {
   position: relative; z-index: 1;
   max-width: var(--max-content);
@@ -139,7 +139,7 @@ body {
   gap: 40px;
 }
 
-/* ── Hero Section ─────────────────────────────────────────────────────────── */
+/*  Hero Section  */
 .hero-section { text-align: center; }
 
 .hero-title {
@@ -223,7 +223,7 @@ body {
   align-self: flex-start; white-space: nowrap;
 }
 
-/* ── Section Layout ───────────────────────────────────────────────────────── */
+/*  Section Layout  */
 .dash-section {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -246,7 +246,7 @@ body {
 .section-action:hover { opacity: 0.8; }
 .section-note { font-size: 11px; color: var(--text-muted); }
 
-/* ── No Profile Block ─────────────────────────────────────────────────────── */
+/*  No Profile Block  */
 .no-profile-block {
   text-align: center;
   padding: 32px 20px;
@@ -274,7 +274,7 @@ body {
 }
 .setup-btn:hover { box-shadow: 0 6px 32px rgba(0,212,255,0.35); transform: translateY(-1px); }
 
-/* ── Profile Summary Card ─────────────────────────────────────────────────── */
+/*  Profile Summary Card  */
 .profile-summary-card {
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-accent);
@@ -327,7 +327,7 @@ body {
 .profile-field-val { font-size: 12px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-field-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
 
-/* ── Dictionary Card ──────────────────────────────────────────────────────── */
+/*  Dictionary Card  */
 .dict-card {
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border);
@@ -361,7 +361,7 @@ body {
 }
 .dict-privacy-note svg { color: var(--accent-green); flex-shrink: 0; }
 
-/* ── History Table ────────────────────────────────────────────────────────── */
+/*  History Table  */
 .history-empty {
   text-align: center;
   padding: 32px 20px;
@@ -423,7 +423,7 @@ body {
 .hist-rank { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .hist-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
-/* ── Privacy Section ──────────────────────────────────────────────────────── */
+/*  Privacy Section  */
 .privacy-section { }
 .privacy-card {
   background: linear-gradient(135deg, rgba(0,212,255,0.04), rgba(124,58,237,0.04));
@@ -454,7 +454,7 @@ body {
 }
 .privacy-item code { font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); }
 
-/* ── Responsive ───────────────────────────────────────────────────────────── */
+/*  Responsive  */
 @media (max-width: 600px) {
   .dash-main { padding: 24px 14px 48px; }
   .dash-header-inner { padding: 12px 14px; }

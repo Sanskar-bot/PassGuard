@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Analyse your password's strength with entropy calculation, pattern detection, common wordlist checks, username similarity analysis, and brute-force time estimation. Fully offline." />
-  <title>PassGuard — Password Strength Analyzer</title>
+  <title>PassGuard  Password Strength Analyzer</title>
 
   <!-- Favicon (inline SVG as data URI) -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'></text></svg>" />
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -15,7 +15,7 @@
 
 <div class="page-wrapper">
 
-  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <!--  Header  -->
   <header class="site-header">
     <div class="logo-badge">
       <span class="dot"></span>
@@ -25,7 +25,7 @@
     <p>Analyse password strength with entropy maths, wordlist detection, pattern analysis, and real brute-force time estimates.</p>
   </header>
 
-  <!-- ── Input Card ───────────────────────────────────────────────────────── -->
+  <!--  Input Card  -->
   <section class="input-section" aria-label="Password input">
 
     <div class="glass-card">
@@ -35,7 +35,7 @@
           type="password"
           id="password-input"
           class="password-field"
-          placeholder="Type or paste your password…"
+          placeholder="Type or paste your password"
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
@@ -50,7 +50,7 @@
         <div id="strength-bar"></div>
       </div>
       <div class="strength-label-row">
-        <span id="strength-label" class="strength-label">—</span>
+        <span id="strength-label" class="strength-label"></span>
       </div>
 
       <!-- Character class indicators -->
@@ -77,7 +77,7 @@
           type="text"
           id="username-input"
           class="text-field"
-          placeholder="Enter your username to check similarity…"
+          placeholder="Enter your username to check similarity"
           autocomplete="off"
           spellcheck="false"
         />
@@ -86,15 +86,15 @@
 
   </section>
 
-  <!-- ── Empty state ──────────────────────────────────────────────────────── -->
+  <!--  Empty state  -->
   <div id="empty-state" aria-live="polite">
     <div class="empty-state">
-      <div class="empty-icon">🔐</div>
+      <div class="empty-icon"></div>
       <p>Enter a password above to see your full security report.</p>
     </div>
   </div>
 
-  <!-- ── Results ──────────────────────────────────────────────────────────── -->
+  <!--  Results  -->
   <section id="results-panel" class="hidden" aria-live="polite" aria-label="Analysis results">
 
     <div class="results-grid">
@@ -114,7 +114,7 @@
             </div>
           </div>
 
-          <div id="score-category" class="score-category">—</div>
+          <div id="score-category" class="score-category"></div>
 
           <!-- Score breakdown bars -->
           <div class="section-title">Score Breakdown</div>
@@ -129,25 +129,25 @@
         <div class="stats-grid" aria-label="Password statistics">
           <div class="stat-card">
             <div class="stat-label">Length</div>
-            <div class="stat-value" id="stat-length">—</div>
+            <div class="stat-value" id="stat-length"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Entropy</div>
-            <div class="stat-value" id="stat-entropy">—</div>
+            <div class="stat-value" id="stat-entropy"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Charset Size</div>
-            <div class="stat-value" id="stat-charset">—</div>
+            <div class="stat-value" id="stat-charset"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Variety</div>
-            <div class="stat-value" id="stat-variety">—</div>
+            <div class="stat-value" id="stat-variety"></div>
           </div>
         </div>
 
         <!-- Issues panel (hidden when no issues) -->
         <div id="issues-panel" class="issues-panel hidden" role="alert" aria-label="Security issues">
-          <div class="issues-header">⚠ Issues Found</div>
+          <div class="issues-header"> Issues Found</div>
           <ul id="issues-list" class="issues-list"></ul>
         </div>
 
@@ -175,20 +175,20 @@
     </div>
   </section>
 
-  <!-- ── Advanced Personalized Attack Analysis ─────────────────────────────── -->
+  <!--  Advanced Personalized Attack Analysis  -->
   <section id="personal-attack-section" class="hidden personal-attack-section" aria-label="Advanced personalized attack analysis">
 
-    <h2 class="section-heading">🎯 Advanced Personalized Attack Analysis</h2>
+    <h2 class="section-heading"> Advanced Personalized Attack Analysis</h2>
 
-    <!-- Step 2: CTA card — always visible when password is entered -->
+    <!-- Step 2: CTA card  always visible when password is entered -->
     <div id="personal-cta-card" class="glass-card personal-cta-card">
       <div class="personal-cta-inner">
-        <div class="personal-cta-icon">🕵️</div>
+        <div class="personal-cta-icon">️</div>
         <div class="personal-cta-text">
           <div class="personal-cta-title">Simulate a Targeted Attack</div>
           <p class="personal-cta-desc">
             Test your password against a personalised dictionary generated from information
-            someone who knows you might use — names, birthdays, pets, and more.
+            someone who knows you might use  names, birthdays, pets, and more.
             All fields are optional. Nothing is sent anywhere.
           </p>
         </div>
@@ -201,10 +201,10 @@
     <!-- Step 3: Profile form (hidden until button clicked) -->
     <div id="personal-form-card" class="glass-card hidden personal-form-card">
       <div class="personal-form-header">
-        <span class="personal-form-icon">👤</span>
+        <span class="personal-form-icon"></span>
         <div>
           <div class="personal-form-title">Enter Personal Information</div>
-          <div class="personal-form-subtitle">All fields are optional — fill in what you know.</div>
+          <div class="personal-form-subtitle">All fields are optional  fill in what you know.</div>
         </div>
       </div>
 
@@ -254,7 +254,7 @@
 
       <div class="personal-form-actions">
         <button id="run-personal-analysis-btn" class="btn-primary personal-generate-btn" aria-label="Generate dictionary and analyse">
-          ⚡ Generate &amp; Analyse
+           Generate &amp; Analyse
         </button>
         <button id="cancel-personal-btn" class="btn-secondary" aria-label="Cancel">
           Cancel
@@ -267,7 +267,7 @@
       <div class="personal-loading-inner">
         <div class="personal-spinner"></div>
         <div class="personal-loading-text">
-          <div class="personal-loading-title">Generating personalised dictionary…</div>
+          <div class="personal-loading-title">Generating personalised dictionary</div>
           <div class="personal-loading-sub">Analysing name combinations, dates, and patterns</div>
         </div>
       </div>
@@ -281,19 +281,19 @@
 
         <div class="personal-stat-card">
           <div class="personal-stat-label">Dictionary Size</div>
-          <div class="personal-stat-value" id="pa-dict-size">—</div>
+          <div class="personal-stat-value" id="pa-dict-size"></div>
           <div class="personal-stat-sub">passwords generated</div>
         </div>
 
         <div class="personal-stat-card" id="pa-found-card">
           <div class="personal-stat-label">Password Found</div>
-          <div class="personal-stat-value" id="pa-found">—</div>
+          <div class="personal-stat-value" id="pa-found"></div>
           <div class="personal-stat-sub" id="pa-found-sub">in dictionary</div>
         </div>
 
         <div class="personal-stat-card" id="pa-rank-card">
           <div class="personal-stat-label">Attack Rank</div>
-          <div class="personal-stat-value" id="pa-rank">—</div>
+          <div class="personal-stat-value" id="pa-rank"></div>
           <div class="personal-stat-sub">guess number</div>
         </div>
 
@@ -303,7 +303,7 @@
       <div class="personal-score-section">
         <div class="personal-score-header">
           <span class="personal-score-label">Personalized Attack Resistance</span>
-          <span class="personal-score-value" id="pa-score-value">—</span>
+          <span class="personal-score-value" id="pa-score-value"></span>
         </div>
         <div class="personal-score-track" role="progressbar" aria-label="Personal attack resistance score">
           <div class="personal-score-fill" id="pa-score-fill"></div>
@@ -313,12 +313,12 @@
       <!-- Risk level badge -->
       <div class="personal-risk-row">
         <span class="personal-risk-label">Risk Level</span>
-        <span class="personal-risk-badge" id="pa-risk-badge">—</span>
+        <span class="personal-risk-badge" id="pa-risk-badge"></span>
       </div>
 
       <!-- Explanation list -->
       <div class="personal-explanation" id="pa-explanation">
-        <div class="personal-explanation-title">⚡ Analysis Details</div>
+        <div class="personal-explanation-title"> Analysis Details</div>
         <ul class="personal-explanation-list" id="pa-explanation-list"></ul>
       </div>
 
@@ -328,7 +328,7 @@
           ⬇️ Download Dictionary
         </button>
         <button id="rerun-personal-btn" class="btn-secondary personal-rerun-btn" aria-label="Edit profile and re-run analysis">
-          ✏️ Edit &amp; Re-run
+          ️ Edit &amp; Re-run
         </button>
       </div>
 
@@ -336,7 +336,7 @@
 
   </section>
 
-  <!-- ── Password Generator ────────────────────────────────────────────────── -->
+  <!--  Password Generator  -->
   <section class="generator-section" aria-label="Password generator">
     <h2 class="section-heading">Password Generator</h2>
 
@@ -364,12 +364,12 @@
               <input type="checkbox" id="gen-digits" checked /> Numbers (0-9)
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" id="gen-symbols" checked /> Symbols (!@#…)
+              <input type="checkbox" id="gen-symbols" checked /> Symbols (!@#)
             </label>
           </div>
 
           <button class="btn-primary" id="gen-btn" aria-label="Generate new password">
-            ⚡ Generate Password
+             Generate Password
           </button>
 
         </div>
@@ -384,10 +384,10 @@
 
         <div class="gen-actions">
           <button class="btn-secondary" id="gen-copy-btn" aria-label="Copy generated password">
-            📋 Copy
+             Copy
           </button>
           <button class="btn-secondary" id="gen-use-btn" aria-label="Analyse generated password">
-            🔍 Analyse This
+             Analyse This
           </button>
         </div>
       </div>
@@ -395,10 +395,10 @@
     </div>
   </section>
 
-  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
+  <!--  Footer  -->
   <footer class="site-footer">
     <p>
-      PassGuard runs entirely in your browser — your password is <strong>never sent anywhere</strong>.
+      PassGuard runs entirely in your browser  your password is <strong>never sent anywhere</strong>.
       Open the browser console and run <code>runTests()</code> to see built-in test cases.
     </p>
   </footer>

@@ -1,17 +1,17 @@
 /**
- * profileStore.js — VaultZero v2
- * ─────────────────────────────────────────────────────────────────────────────
+ * profileStore.js  VaultZero v2
+ * 
  * Single source of truth for reading and writing:
- *   • The user's Personal Security Profile (vz_profile)
- *   • The pre-computed CUPP attack dictionary (vz_dict_chunk_N + vz_dict_meta)
+ *    The user's Personal Security Profile (vz_profile)
+ *    The pre-computed CUPP attack dictionary (vz_dict_chunk_N + vz_dict_meta)
  *
  * All data lives in chrome.storage.local ONLY. Never synced, never transmitted.
  *
  * Dictionary chunking strategy:
  *   chrome.storage.local limits a single set() call to 5MB serialised.
- *   A 15,000-entry dictionary is ~750KB — safe in one chunk, but we split
+ *   A 15,000-entry dictionary is ~750KB  safe in one chunk, but we split
  *   into CHUNK_SIZE=3,000 entries per key for headroom and fast partial reads.
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 const PROFILE_KEY    = 'vz_profile';
@@ -22,7 +22,7 @@ const CHUNK_SIZE     = 3000;
 const STORE_VERSION  = '2.0';
 const MAX_HISTORY    = 5;
 
-// ── Profile ───────────────────────────────────────────────────────────────────
+//  Profile 
 
 /**
  * Read the stored profile. Returns null if none exists.
@@ -72,7 +72,7 @@ export async function deleteProfile() {
   });
 }
 
-// ── Dictionary metadata ───────────────────────────────────────────────────────
+//  Dictionary metadata 
 
 /**
  * Read the dictionary metadata record.
@@ -86,7 +86,7 @@ export async function getDictMeta() {
   });
 }
 
-// ── Dictionary read ───────────────────────────────────────────────────────────
+//  Dictionary read 
 
 /**
  * Reassemble the full dictionary from all chunks.
@@ -110,7 +110,7 @@ export async function getDictionary() {
   });
 }
 
-// ── Dictionary write ──────────────────────────────────────────────────────────
+//  Dictionary write 
 
 /**
  * Split the dictionary into chunks and persist them alongside metadata.
@@ -159,7 +159,7 @@ export async function clearDictionary() {
   });
 }
 
-// ── Staleness check ───────────────────────────────────────────────────────────
+//  Staleness check 
 
 /**
  * Compute a lightweight hash of the profile to detect changes.
@@ -189,7 +189,7 @@ export async function isDictionaryStale(currentProfile) {
   return meta.profileHash !== profileHash(currentProfile);
 }
 
-// ── Analysis history ──────────────────────────────────────────────────────────
+//  Analysis history 
 
 /**
  * Prepend a new analysis result to the history (capped at MAX_HISTORY).

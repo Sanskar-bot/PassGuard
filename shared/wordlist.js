@@ -1,25 +1,25 @@
 /**
  * wordlist.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Fast password/dictionary lookup using two data structures:
  *
- *   1. Hash-Set  – O(1) exact match against TOP_PASSWORDS
- *   2. Trie      – O(k) substring scan: detects dictionary words INSIDE
+ *   1. Hash-Set   O(1) exact match against TOP_PASSWORDS
+ *   2. Trie       O(k) substring scan: detects dictionary words INSIDE
  *                  a password (e.g. "dragon" inside "myDragon99!")
  *
  * Both checks are also run against the leet-normalised version of the password
  * so "p@55w0rd" is caught the same as "password".
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 import { TOP_PASSWORDS, DICTIONARY_WORDS } from "../data/common_passwords.js";
 import { normalizeLeet } from "./patterns.js";
 
-// ── Trie Implementation ───────────────────────────────────────────────────────
+//  Trie Implementation 
 
 class TrieNode {
   constructor() {
-    this.children = {};   // char → TrieNode
+    this.children = {};   // char  TrieNode
     this.isEnd    = false; // marks end of a complete word
     this.word     = null;  // stores the original word at terminal nodes
   }
@@ -57,18 +57,18 @@ class Trie {
         if (node.isEnd) found.add(node.word);
       }
     }
-    // Only report words with length ≥ 4 to reduce noise
+    // Only report words with length  4 to reduce noise
     return [...found].filter(w => w.length >= 4);
   }
 }
 
-// ── Build Trie at module load time (one-time cost) ────────────────────────────
+//  Build Trie at module load time (one-time cost) 
 const dictionaryTrie = new Trie();
 for (const word of DICTIONARY_WORDS) {
   dictionaryTrie.insert(word.toLowerCase());
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+//  Public API 
 
 /**
  * Check a password against the common-password set and dictionary trie.
@@ -79,24 +79,24 @@ for (const word of DICTIONARY_WORDS) {
  *   leetMatch:          boolean,
  *   substringMatches:   string[],
  *   leetSubstrings:     string[],
- *   wordlistScore:      number,    // 0–15 contribution to scorer
+ *   wordlistScore:      number,    // 015 contribution to scorer
  * }}
  */
 export function checkWordlist(password) {
   const lower      = password.toLowerCase();
   const normalized = normalizeLeet(lower); // leet-reversed form
 
-  // ── Exact match in common-password set ───────────────────────────────────
+  //  Exact match in common-password set 
   const exactMatch = TOP_PASSWORDS.has(lower);
   const leetMatch  = !exactMatch && TOP_PASSWORDS.has(normalized);
 
-  // ── Substring match via Trie ──────────────────────────────────────────────
+  //  Substring match via Trie 
   const substringMatches = dictionaryTrie.findSubstrings(lower);
   const leetSubstrings   = normalized !== lower
     ? dictionaryTrie.findSubstrings(normalized).filter(w => !substringMatches.includes(w))
     : [];
 
-  // ── Score calculation (max 15 pts) ────────────────────────────────────────
+  //  Score calculation (max 15 pts) 
   let wordlistScore = 15;
   if (exactMatch || leetMatch)         wordlistScore -= 15; // severe
   else if (substringMatches.length > 0 || leetSubstrings.length > 0) {

@@ -1,17 +1,17 @@
 /**
  * personalDictionaryScorer.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Evaluates a password against a generated personal dictionary.
  *
  * Responsibilities:
- *   • Find the password in the dictionary and return its rank
- *   • Compute a Personalized Attack Resistance score (0–100)
- *   • Determine a Risk Level (Critical / High / Medium / Low / Safe)
- *   • Generate a human-readable explanation of why the password is at risk
- * ─────────────────────────────────────────────────────────────────────────────
+ *    Find the password in the dictionary and return its rank
+ *    Compute a Personalized Attack Resistance score (0100)
+ *    Determine a Risk Level (Critical / High / Medium / Low / Safe)
+ *    Generate a human-readable explanation of why the password is at risk
+ * 
  */
 
-// ── Leet substitution map (for reverse-leet checking) ────────────────────────
+//  Leet substitution map (for reverse-leet checking) 
 const LEET_MAP = { a: '4', e: '3', i: '1', o: '0', s: '5', t: '7', g: '9', z: '2' };
 
 /**
@@ -24,7 +24,7 @@ function toLeet(str) {
   return str.toLowerCase().split('').map(c => LEET_MAP[c] ?? c).join('');
 }
 
-// ── Dictionary search ─────────────────────────────────────────────────────────
+//  Dictionary search 
 
 /**
  * Find a password in the dictionary. Matching is case-insensitive.
@@ -57,7 +57,7 @@ export function findPasswordInDictionary(password, dictionary) {
  * so no per-call computation is needed.
  *
  * @param {string}           password
- * @param {Map<string,number>} dictMap   lowercased-entry → 1-indexed rank
+ * @param {Map<string,number>} dictMap   lowercased-entry  1-indexed rank
  * @returns {{ found: boolean, rank: number|null }}
  */
 export function findPasswordInSet(password, dictMap) {
@@ -75,37 +75,37 @@ export function findPasswordInSet(password, dictMap) {
   return { found: false, rank: null };
 }
 
-// ── Score computation ─────────────────────────────────────────────────────────
+//  Score computation 
 
 /**
- * Compute Personalized Attack Resistance score (0–100).
+ * Compute Personalized Attack Resistance score (0100).
  *
  * Scale (per spec):
- *   Rank ≤ 100        → 0–20   (critical)
- *   Rank ≤ 1,000      → 20–40  (high)
- *   Rank ≤ 5,000      → 40–60  (elevated)
- *   Rank ≤ 15,000     → 60–79  (moderate)
- *   Not found         → 80–100 (resistant)
+ *   Rank  100         020   (critical)
+ *   Rank  1,000       2040  (high)
+ *   Rank  5,000       4060  (elevated)
+ *   Rank  15,000      6079  (moderate)
+ *   Not found          80100 (resistant)
  *
  * @param {boolean}     found
  * @param {number|null} rank     1-indexed position in dictionary
  * @param {number}      dictSize Total dictionary size
- * @returns {number}    0–100
+ * @returns {number}    0100
  */
 export function computePersonalScore(found, rank, dictSize) {
   if (!found || rank === null) {
-    // Not found — high resistance; scale within 80–100 based on dict size
+    // Not found  high resistance; scale within 80100 based on dict size
     const safeBonus = Math.min(20, Math.round((dictSize / 15000) * 20));
     return 80 + safeBonus;
   }
 
-  if (rank <= 100)   return Math.round(rank / 100 * 20);           // 0–20
-  if (rank <= 1000)  return 20 + Math.round((rank - 100) / 900 * 20);  // 20–40
-  if (rank <= 5000)  return 40 + Math.round((rank - 1000) / 4000 * 20); // 40–60
-  return 60 + Math.round((rank - 5000) / 10000 * 19);               // 60–79
+  if (rank <= 100)   return Math.round(rank / 100 * 20);           // 020
+  if (rank <= 1000)  return 20 + Math.round((rank - 100) / 900 * 20);  // 2040
+  if (rank <= 5000)  return 40 + Math.round((rank - 1000) / 4000 * 20); // 4060
+  return 60 + Math.round((rank - 5000) / 10000 * 19);               // 6079
 }
 
-// ── Risk level ────────────────────────────────────────────────────────────────
+//  Risk level 
 
 /**
  * Map a score and found state to a risk level label + CSS class.
@@ -122,11 +122,11 @@ export function computeRiskLevel(found, rank) {
   return                      { label: 'Low',       cssClass: 'risk-low'      };
 }
 
-// ── Explanation engine ────────────────────────────────────────────────────────
+//  Explanation engine 
 
 /**
  * Analyse the password against the profile and return a list of human-readable
- * risk reasons. Does not depend on the dictionary itself — analyses the raw
+ * risk reasons. Does not depend on the dictionary itself  analyses the raw
  * password for personal patterns.
  *
  * @param {string} password
@@ -204,12 +204,12 @@ export function generateRiskExplanation(password, profile, found, rank) {
   const LEET_MAP_LOCAL = { '4': 'a', '3': 'e', '1': 'i', '0': 'o', '5': 's', '7': 't', '9': 'g', '2': 'z' };
   const hasLeet = password.split('').some(c => LEET_MAP_LOCAL[c]);
   if (hasLeet) {
-    reasons.push('Uses leetspeak substitutions (e.g. 4→a, 3→e) — easily reversed by attackers');
+    reasons.push('Uses leetspeak substitutions (e.g. 4a, 3e)  easily reversed by attackers');
   }
 
   // No personal info at all
   if (reasons.length === 0 && !found) {
-    reasons.push('No obvious personal patterns detected — good resistance to targeted attacks');
+    reasons.push('No obvious personal patterns detected  good resistance to targeted attacks');
   }
 
   return reasons;

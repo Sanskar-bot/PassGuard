@@ -1,13 +1,13 @@
 /**
  * username.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Detects when a password is suspiciously similar to the user's username via:
  *
- *   1. Direct containment  — password contains username as substring
- *   2. Levenshtein distance ≤ 2 between password and username
+ *   1. Direct containment   password contains username as substring
+ *   2. Levenshtein distance  2 between password and username
  *   3. Common suffix/prefix variations: username + "123", "!", "@", year
  *   4. Reversed username check
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 /**
@@ -44,14 +44,14 @@ const COMMON_AFFIXES = [
  * Check whether a password is dangerously similar to the given username.
  *
  * @param {string} password
- * @param {string} username  May be empty — function no-ops if so
+ * @param {string} username  May be empty  function no-ops if so
  * @returns {{
  *   checked:      boolean,
  *   contains:     boolean,   // password contains username as substring
- *   nearMatch:    boolean,   // edit distance ≤ 2
+ *   nearMatch:    boolean,   // edit distance  2
  *   variation:    boolean,   // username ± common affix
  *   reversed:     boolean,   // password contains reversed username
- *   usernameScore: number,   // 0–10 contribution
+ *   usernameScore: number,   // 010 contribution
  * }}
  */
 export function checkUsername(password, username) {
@@ -88,7 +88,7 @@ export function checkUsername(password, username) {
   // 4. Reversed username
   const reversed = rev.length >= 3 && pwd.includes(rev);
 
-  // ── Score ─────────────────────────────────────────────────────────────────
+  //  Score 
   let usernameScore = 10;
   if (contains)  usernameScore -= 10;
   else if (nearMatch || variation) usernameScore -= 7;

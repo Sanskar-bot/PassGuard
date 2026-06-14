@@ -1,54 +1,54 @@
 /**
- * dictCache.js — VaultZero v2
- * ─────────────────────────────────────────────────────────────────────────────
+ * dictCache.js  VaultZero v2
+ * 
  * In-memory singleton that holds the attack dictionary as a
- * Map<string, number>  (lowercased entry → 1-indexed rank)
+ * Map<string, number>  (lowercased entry  1-indexed rank)
  *
- * This enables O(1) lookups during every keystroke — the dictionary is read
+ * This enables O(1) lookups during every keystroke  the dictionary is read
  * from chrome.storage.local exactly ONCE per browser session (lazy, on first
  * lookup), then held in RAM for the lifetime of the tab/service-worker.
  *
  * API:
  *   warmCache()           Load dict from storage into RAM (idempotent)
  *   lookup(password)      { found: boolean, rank: number|null }
- *   isReady()             boolean — true after first successful warmCache
- *   getSize()             number — entries currently loaded
+ *   isReady()             boolean  true after first successful warmCache
+ *   getSize()             number  entries currently loaded
  *   invalidate()          Clear RAM cache (call after profile/dict update)
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 import { getDictionary, getDictMeta } from './profileStore.js';
 
-// ── Module-level state (singleton) ────────────────────────────────────────────
-/** @type {Map<string, number>} lowercased password → 1-indexed rank */
+//  Module-level state (singleton) 
+/** @type {Map<string, number>} lowercased password  1-indexed rank */
 let _dictMap    = null;
 let _warming    = false;   // prevents concurrent warm calls
 let _warmPromise = null;   // deduplicate concurrent warmCache() calls
 
-// ── Leet normalisation (mirrors personalDictionaryScorer) ─────────────────────
+//  Leet normalisation (mirrors personalDictionaryScorer) 
 const LEET_MAP = { a:'4', e:'3', i:'1', o:'0', s:'5', t:'7', g:'9', z:'2' };
 
 function toLeet(str) {
   return str.toLowerCase().split('').map(c => LEET_MAP[c] ?? c).join('');
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+//  Public API 
 
 /**
  * Load the stored dictionary into RAM.
- * Safe to call multiple times — subsequent calls while warming are queued.
+ * Safe to call multiple times  subsequent calls while warming are queued.
  * If already warmed, resolves immediately.
  * @returns {Promise<void>}
  */
 export async function warmCache() {
   if (_dictMap !== null) return;          // already warm
-  if (_warmPromise) return _warmPromise;  // already warming — join the queue
+  if (_warmPromise) return _warmPromise;  // already warming  join the queue
 
   _warmPromise = (async () => {
     try {
       const meta = await getDictMeta();
       if (!meta || meta.size === 0) {
-        _dictMap = new Map(); // empty — no profile yet
+        _dictMap = new Map(); // empty  no profile yet
         return;
       }
 
@@ -89,7 +89,7 @@ export function lookup(password) {
   const lower = password.toLowerCase();
   const leet  = toLeet(lower);
 
-  // O(1) — Map.get is O(1) average
+  // O(1)  Map.get is O(1) average
   const rankByLower = _dictMap.get(lower);
   if (rankByLower !== undefined) return { found: true, rank: rankByLower };
 

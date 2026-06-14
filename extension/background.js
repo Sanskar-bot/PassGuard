@@ -1,16 +1,16 @@
 /**
- * background.js — VaultZero v2 Service Worker
- * ─────────────────────────────────────────────────────────────────────────────
+ * background.js  VaultZero v2 Service Worker
+ * 
  * Responsibilities:
- *   • On first install: open profile setup wizard in a new tab
- *   • Manage extension badge (score / field detection)
- *   • Relay messages between content scripts and popup
- *   • Handle profile/dictionary update events from profile.js
- *   • Broadcast DICT_UPDATED to all content scripts on regen
- * ─────────────────────────────────────────────────────────────────────────────
+ *    On first install: open profile setup wizard in a new tab
+ *    Manage extension badge (score / field detection)
+ *    Relay messages between content scripts and popup
+ *    Handle profile/dictionary update events from profile.js
+ *    Broadcast DICT_UPDATED to all content scripts on regen
+ * 
  */
 
-// ── Default Settings ──────────────────────────────────────────────────────────
+//  Default Settings 
 const DEFAULT_SETTINGS = {
   enableWidget:        true,
   enablePersonalized:  true,
@@ -20,15 +20,15 @@ const DEFAULT_SETTINGS = {
   minScoreThreshold:   50,
 };
 
-// ── Tab score state (in-memory, resets on SW restart) ─────────────────────────
-const tabScores = new Map(); // tabId → { score, category, color, fieldCount }
+//  Tab score state (in-memory, resets on SW restart) 
+const tabScores = new Map(); // tabId  { score, category, color, fieldCount }
 
-// ── Install ───────────────────────────────────────────────────────────────────
+//  Install 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === 'install') {
     // Write default settings
     await chrome.storage.sync.set({ settings: DEFAULT_SETTINGS });
-    console.log('[VaultZero] Installed — defaults written.');
+    console.log('[VaultZero] Installed  defaults written.');
 
     // Open first-time setup wizard in a new tab
     const setupUrl = chrome.runtime.getURL('pages/profile.html#setup');
@@ -36,7 +36,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   }
 });
 
-// ── Message handler ───────────────────────────────────────────────────────────
+//  Message handler 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const tabId = sender.tab?.id;
 
@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       break;
     }
 
-    // Profile or dictionary was updated — broadcast to all content scripts
+    // Profile or dictionary was updated  broadcast to all content scripts
     case 'PROFILE_UPDATED': {
       broadcastToAllTabs({ type: 'DICT_UPDATED' });
       sendResponse({ ok: true });
@@ -119,7 +119,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return false;
 });
 
-// ── Broadcast to all content script tabs ──────────────────────────────────────
+//  Broadcast to all content script tabs 
 function broadcastToAllTabs(payload) {
   chrome.tabs.query({}, (tabs) => {
     for (const tab of tabs) {
@@ -130,7 +130,7 @@ function broadcastToAllTabs(payload) {
   });
 }
 
-// ── Badge management ──────────────────────────────────────────────────────────
+//  Badge management 
 
 async function updateBadge(tabId) {
   if (!tabId) return;
@@ -160,12 +160,12 @@ async function updateBadge(tabId) {
     chrome.action.setBadgeText({ text, tabId });
     chrome.action.setBadgeBackgroundColor({ color: bgColor, tabId });
   } else if (data.fieldCount > 0) {
-    chrome.action.setBadgeText({ text: '—', tabId });
+    chrome.action.setBadgeText({ text: '', tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#7c3aed', tabId });
   }
 }
 
-// ── Clear badge when tab navigates ───────────────────────────────────────────
+//  Clear badge when tab navigates 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === 'loading') {
     tabScores.delete(tabId);

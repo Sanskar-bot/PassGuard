@@ -1,7 +1,7 @@
 /**
  * scorer.js
- * ─────────────────────────────────────────────────────────────────────────────
- * Aggregates outputs from all analysis modules into a single 0–100 score
+ * 
+ * Aggregates outputs from all analysis modules into a single 0100 score
  * and a category label.
  *
  * Score breakdown (max 100):
@@ -13,21 +13,21 @@
  *   Username    10 pts   (from username.js)
  *
  * Personalized penalty (applied on top):
- *   Rank 1–100    → −50 pts  (Critical targeted risk)
- *   Rank 101–1000 → −35 pts  (High targeted risk)
- *   Rank 1001–5000→ −20 pts  (Medium targeted risk)
- *   Rank > 5000   → −10 pts  (Low targeted risk)
+ *   Rank 1100     50 pts  (Critical targeted risk)
+ *   Rank 1011000  35 pts  (High targeted risk)
+ *   Rank 10015000 20 pts  (Medium targeted risk)
+ *   Rank > 5000    10 pts  (Low targeted risk)
  *
  * The penalty reflects that a password cracked by a targeted attacker in
  * the first few hundred guesses is fundamentally not "Very Strong",
  * regardless of its entropy or character variety.
  *
  * Categories:
- *   0–24   Weak
- *   25–49  Moderate
- *   50–74  Strong
- *   75–100 Very Strong
- * ─────────────────────────────────────────────────────────────────────────────
+ *   024   Weak
+ *   2549  Moderate
+ *   5074  Strong
+ *   75100 Very Strong
+ * 
  */
 
 export const CATEGORIES = [
@@ -49,8 +49,8 @@ export const CATEGORIES = [
  *   When provided and found=true, applies a targeted-risk penalty to the score.
  *
  * @returns {{
- *   score:          number,    // 0–100 (includes personalized penalty if applicable)
- *   baseScore:      number,    // 0–100 (before personalized penalty)
+ *   score:          number,    // 0100 (includes personalized penalty if applicable)
+ *   baseScore:      number,    // 0100 (before personalized penalty)
  *   personalPenalty:number,    // penalty applied (0 if not found)
  *   personalRisk:   string,    // 'Critical'|'High'|'Medium'|'Low'|'Resistant'|'Unknown'
  *   category:       string,
@@ -72,7 +72,7 @@ export function computeScore(strengthResult, wordlistResult, patternResult, user
   const raw = Object.values(breakdown).reduce((a, b) => a + b, 0);
   const baseScore = Math.min(100, Math.max(0, Math.round(raw)));
 
-  // ── Personalized penalty ────────────────────────────────────────────────────
+  //  Personalized penalty 
   let personalPenalty = 0;
   let personalRisk    = 'Unknown';
 

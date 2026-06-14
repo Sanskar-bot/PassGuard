@@ -1,6 +1,6 @@
 /**
- * dictionary.worker.js — VaultZero v2 Web Worker
- * ─────────────────────────────────────────────────────────────────────────────
+ * dictionary.worker.js  VaultZero v2 Web Worker
+ * 
  * Runs CUPP-inspired dictionary generation off the main thread so the UI
  * stays fully responsive.
  *
@@ -14,7 +14,7 @@
  *   Outgoing: { type: 'PROGRESS', percent }
  *             { type: 'RESULT',   dictionary, dictSize, profileHash }
  *             { type: 'ERROR',    message }
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 import { generatePersonalDictionary } from '../../shared/personalDictionaryGenerator.js';
@@ -25,7 +25,7 @@ self.onmessage = async function (event) {
   if (type !== 'GENERATE') return;
 
   try {
-    // 5% — starting
+    // 5%  starting
     self.postMessage({ type: 'PROGRESS', percent: 5 });
 
     // 1. Generate the dictionary (CPU-bound, off main thread)

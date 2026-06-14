@@ -1,16 +1,16 @@
 /**
  * generator.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Cryptographically secure password generator.
  *
- * Uses window.crypto.getRandomValues() — NOT Math.random() — so outputs
+ * Uses window.crypto.getRandomValues()  NOT Math.random()  so outputs
  * are suitable for real security use.
  *
  * Guarantees:
- *   • At least one character from each enabled class
- *   • Characters drawn uniformly from the combined pool (no modulo bias
+ *    At least one character from each enabled class
+ *    Characters drawn uniformly from the combined pool (no modulo bias
  *     by using rejection sampling)
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 const CHAR_SETS = {
@@ -56,9 +56,9 @@ function secureShuffle(arr) {
  *
  * @param {{
  *   length:    number,   // Total character count (default 16)
- *   lowercase: boolean,  // Include a–z
- *   uppercase: boolean,  // Include A–Z
- *   digits:    boolean,  // Include 0–9
+ *   lowercase: boolean,  // Include az
+ *   uppercase: boolean,  // Include AZ
+ *   digits:    boolean,  // Include 09
  *   symbols:   boolean,  // Include special chars
  * }} options
  *

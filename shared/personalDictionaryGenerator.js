@@ -1,6 +1,6 @@
 /**
  * personalDictionaryGenerator.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * CUPP-inspired personalized password dictionary generator.
  *
  * Source intelligence extracted from cupp.py (Mebus / j0rgan), re-implemented
@@ -8,21 +8,21 @@
  * interactive-terminal logic from the original CUPP has been discarded.
  *
  * What is retained from CUPP:
- *   • generate_wordlist_from_profile() — core combination engine
- *   • make_leet()                      — character substitution
- *   • komb() helper                    — Cartesian word+suffix concat
- *   • concats() helper                 — numeric suffix ranges
- *   • Birthday decomposition           — yy / yyy / yyyy / dd / mm variants
- *   • Name casing variants             — lower / Title / UPPER / reversed
+ *    generate_wordlist_from_profile()  core combination engine
+ *    make_leet()                       character substitution
+ *    komb() helper                     Cartesian word+suffix concat
+ *    concats() helper                  numeric suffix ranges
+ *    Birthday decomposition            yy / yyy / yyyy / dd / mm variants
+ *    Name casing variants              lower / Title / UPPER / reversed
  *
  * What is NOT here:
  *   interactive(), print_to_file(), print_cow(), read_config(),
  *   improve_dictionary(), download_http(), alectodb_download(),
  *   download_wordlist(), get_parser(), main(), argparse, urllib, gzip, csv
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
-// ── Configuration (replaces cupp.cfg) ────────────────────────────────────────
+//  Configuration (replaces cupp.cfg) 
 
 /** Years most commonly embedded in passwords (most probable first). */
 const YEARS = [
@@ -47,7 +47,7 @@ const VANITY_WORDS = [
   'the', 'its', 'im', 'iam', 'my', 'live', 'star', 'fire',
 ];
 
-/** Simple numeric suffixes: 0–99 and common 3/4-digit numbers. */
+/** Simple numeric suffixes: 099 and common 3/4-digit numbers. */
 const NUM_SUFFIXES = (() => {
   const nums = [];
   for (let i = 0; i <= 99; i++) nums.push(String(i).padStart(2, '0'));
@@ -65,7 +65,7 @@ const MAX_LEN = 24;
 /** Hard cap on final dictionary size. */
 const DICT_CAP = 20000;
 
-// ── Core helpers (adapted from CUPP's komb / concats / make_leet) ─────────────
+//  Core helpers (adapted from CUPP's komb / concats / make_leet) 
 
 /**
  * Cartesian concatenation: for each `word` in `words`, yield `word + sep + suffix`
@@ -136,7 +136,7 @@ function leetVariants(word) {
   return variants;
 }
 
-// ── Birthday decomposition (adapted from CUPP lines 395–417) ─────────────────
+//  Birthday decomposition (adapted from CUPP lines 395417) 
 
 /**
  * Break a date string (YYYY-MM-DD from HTML date input) into all sub-parts
@@ -183,7 +183,7 @@ function decomposeBirthday(dateStr) {
   return [...new Set(all.filter(Boolean))];
 }
 
-// ── Name variant generation ───────────────────────────────────────────────────
+//  Name variant generation 
 
 /**
  * Generate all casing/reversal variants of a name token.
@@ -220,7 +220,7 @@ function pairCombinations(setA, setB) {
   return out;
 }
 
-// ── Priority-aware entry builder ──────────────────────────────────────────────
+//  Priority-aware entry builder 
 
 /**
  * Build the ordered list of password candidates from a profile.
@@ -234,7 +234,7 @@ function pairCombinations(setA, setB) {
  *   P5: Company name combinations
  *
  * Within each tier, order is:
- *   bare → + common nums → + year → + birthday → + special → + vanity → leet
+ *   bare  + common nums  + year  + birthday  + special  + vanity  leet
  *
  * @param {object}   profile
  * @param {string}   [profile.name]           First name
@@ -262,7 +262,7 @@ function buildCandidates(profile) {
     }
   };
 
-  // ── Parse personal data ─────────────────────────────────────────────────────
+  //  Parse personal data 
   const nameVars     = nameVariants(profile.name         || '');
   const surnameVars  = nameVariants(profile.surname      || '');
   const nickVars     = nameVariants(profile.nick         || '');
@@ -275,27 +275,27 @@ function buildCandidates(profile) {
   const aliasVars    = nameVariants(profile.commonAlias  || '');
   const dobFrags     = decomposeBirthday(profile.dob || '');
 
-  // Favourite number — used as a suffix/prefix token
+  // Favourite number  used as a suffix/prefix token
   const favNum  = profile.favoriteNumber ? String(profile.favoriteNumber).trim() : '';
   const numTokens = favNum ? [favNum, favNum + favNum] : [];
 
-  // Custom keywords — each word gets the nameVariants treatment
+  // Custom keywords  each word gets the nameVariants treatment
   const rawKeywords = Array.isArray(profile.customKeywords)
     ? profile.customKeywords.filter(k => k && String(k).trim().length > 0)
     : [];
   const keywordVarSets = rawKeywords.map(k => nameVariants(String(k).trim()));
   const allKeywordVars = [...new Set(keywordVarSets.flat())];
 
-  // Birth year (4-digit) and last 2 digits — highest probability
+  // Birth year (4-digit) and last 2 digits  highest probability
   const dobYear = profile.dob ? profile.dob.split('-')[0] : '';
   const dobYY   = dobYear.slice(-2);
 
-  // All name tokens combined (name + surname) — mirrors CUPP's kombina list
+  // All name tokens combined (name + surname)  mirrors CUPP's kombina list
   const primaryVars    = [...new Set([...nameVars, ...surnameVars])].filter(Boolean);
   const fullNamePairs  = pairCombinations(nameVars, surnameVars);
   const allPrimaryVars = [...new Set([...primaryVars, ...fullNamePairs])];
 
-  // ── PRIORITY 0: Custom keywords (highest priority — user explicitly added these)
+  //  PRIORITY 0: Custom keywords (highest priority  user explicitly added these)
   // These are inserted FIRST so they always survive the DICT_CAP cut.
   // The raw string itself is always included (exact match).
   if (rawKeywords.length) {
@@ -325,7 +325,7 @@ function buildCandidates(profile) {
       push(komb(rawKeywords, numTokens));
       push(komb(allKeywordVars, numTokens));
     }
-    // Keyword ↔ name combinations
+    // Keyword  name combinations
     if (nameVars.length) {
       push(pairCombinations(rawKeywords, nameVars));
       push(pairCombinations(nameVars, rawKeywords));
@@ -336,7 +336,7 @@ function buildCandidates(profile) {
     }
   }
 
-  // ── PRIORITY 1: Name-based ──────────────────────────────────────────────────
+  //  PRIORITY 1: Name-based 
 
   // Spec tier 1 patterns first (exact patterns from requirements)
   if (nameVars.length) {
@@ -375,7 +375,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // Name + numeric concats (1–999)
+  // Name + numeric concats (1999)
   if (nameVars.length) {
     push(concats(nameVars, 1, 100));
     if (candidates.length < DICT_CAP * 0.4) {
@@ -391,7 +391,7 @@ function buildCandidates(profile) {
       komb(nameVars, YEARS, '@'),
     );
 
-    // {Name}{Year}@ and {Name}{Year}! — very common human pattern
+    // {Name}{Year}@ and {Name}{Year}!  very common human pattern
     // e.g. Sanskar2004@ / Sanskar2004!
     const yearSuffixCombos = [];
     for (const name of nameVars) {
@@ -415,7 +415,7 @@ function buildCandidates(profile) {
     push(yearSuffixCombos);
   }
 
-  // ── PRIORITY 2: Username combinations ──────────────────────────────────────
+  //  PRIORITY 2: Username combinations 
   if (usernameVars.length) {
     push(
       usernameVars,
@@ -428,7 +428,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 3: Nickname combinations ──────────────────────────────────────
+  //  PRIORITY 3: Nickname combinations 
   if (nickVars.length) {
     push(
       nickVars,
@@ -444,7 +444,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 4: Pet name combinations ──────────────────────────────────────
+  //  PRIORITY 4: Pet name combinations 
   if (petVars.length) {
     push(
       petVars,
@@ -457,7 +457,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 5: Partner name combinations ──────────────────────────────────
+  //  PRIORITY 5: Partner name combinations 
   if (partnerVars.length) {
     push(
       partnerVars,
@@ -469,7 +469,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 6: Company name combinations ──────────────────────────────────
+  //  PRIORITY 6: Company name combinations 
   if (companyVars.length) {
     push(
       companyVars,
@@ -479,7 +479,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 7: Gamer tag combinations ─────────────────────────────────────
+  //  PRIORITY 7: Gamer tag combinations 
   if (gamerTagVars.length) {
     push(
       gamerTagVars,
@@ -493,7 +493,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 8: Sports team combinations ───────────────────────────────────
+  //  PRIORITY 8: Sports team combinations 
   if (teamVars.length) {
     push(
       teamVars,
@@ -505,7 +505,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 9: Common alias combinations ──────────────────────────────────
+  //  PRIORITY 9: Common alias combinations 
   if (aliasVars.length) {
     push(
       aliasVars,
@@ -518,7 +518,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 10: Custom keywords (additional combinations — main block is Priority 0)
+  //  PRIORITY 10: Custom keywords (additional combinations  main block is Priority 0)
   // Only add cross-combinations here that weren't covered above.
   if (allKeywordVars.length) {
     push(
@@ -529,7 +529,7 @@ function buildCandidates(profile) {
     );
   }
 
-  // ── PRIORITY 11: Favourite number as suffix/prefix ──────────────────────────
+  //  PRIORITY 11: Favourite number as suffix/prefix 
   if (numTokens.length && allPrimaryVars.length) {
     push(
       komb(allPrimaryVars, numTokens),
@@ -541,7 +541,7 @@ function buildCandidates(profile) {
   return candidates;
 }
 
-// ── Leetspeak augmentation ────────────────────────────────────────────────────
+//  Leetspeak augmentation 
 
 /**
  * Add leet variants for the top portion of the base list.
@@ -560,7 +560,7 @@ function addLeetVariants(base, limit = 3000) {
   return leet;
 }
 
-// ── Main public export ────────────────────────────────────────────────────────
+//  Main public export 
 
 /**
  * Generate a personalized password dictionary from a user profile.
@@ -584,7 +584,7 @@ function addLeetVariants(base, limit = 3000) {
  *   Ordered, deduplicated list of password candidates.
  *   Index = 0 is the highest-probability guess.
  *   Length is at most DICT_CAP (15,000) entries.
- *   All entries are filtered to MIN_LEN–MAX_LEN characters.
+ *   All entries are filtered to MIN_LENMAX_LEN characters.
  */
 export function generatePersonalDictionary(profile) {
   // Guard: at least one token is needed to generate meaningful passwords

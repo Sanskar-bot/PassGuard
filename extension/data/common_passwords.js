@@ -1,20 +1,20 @@
 /**
  * common_passwords.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Bundled dataset containing:
- *   1. TOP_PASSWORDS  – top ~500 most commonly used passwords (from rockyou /
+ *   1. TOP_PASSWORDS   top ~500 most commonly used passwords (from rockyou /
  *                       SecLists). Used for exact-match and substring checks.
- *   2. DICTIONARY     – ~800 common English words likely to appear in passwords.
+ *   2. DICTIONARY      ~800 common English words likely to appear in passwords.
  *                       Used by the Trie for substring scanning.
  *
  * In a production deployment you could replace this with a server-side API
  * backed by the full rockyou.txt (14 million entries), but this bundled set
  * covers >90% of real-world weak passwords while keeping the app fully offline.
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 export const TOP_PASSWORDS = new Set([
-  // ── Top 500 common passwords ──────────────────────────────────────────────
+  //  Top 500 common passwords 
   "123456","password","123456789","12345678","12345","1234567","1234567890",
   "qwerty","abc123","111111","123123","admin","letmein","welcome","monkey",
   "login","dragon","master","hello","shadow","sunshine","princess","passw0rd",

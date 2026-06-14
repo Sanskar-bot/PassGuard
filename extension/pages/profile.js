@@ -1,10 +1,10 @@
 /**
- * profile.js — VaultZero v2 Profile Page Controller
- * ─────────────────────────────────────────────────────────────────────────────
+ * profile.js  VaultZero v2 Profile Page Controller
+ * 
  * Handles both modes:
- *   #setup  → First-time wizard (3 steps)
- *   (none)  → Profile management (view / edit / delete / regen)
- * ─────────────────────────────────────────────────────────────────────────────
+ *   #setup   First-time wizard (3 steps)
+ *   (none)   Profile management (view / edit / delete / regen)
+ * 
  */
 
 import {
@@ -18,7 +18,7 @@ import {
   profileHash,
 } from '../../shared/profileStore.js';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 const $ = (id) => document.getElementById(id);
 
 function showToast(msg, type = 'success') {
@@ -31,15 +31,15 @@ function showToast(msg, type = 'success') {
 }
 
 function formatDate(ts) {
-  if (!ts) return '—';
+  if (!ts) return '';
   return new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function formatNumber(n) {
-  return typeof n === 'number' ? n.toLocaleString() : '—';
+  return typeof n === 'number' ? n.toLocaleString() : '';
 }
 
-// ── Profile collection from wizard/edit forms ─────────────────────────────────
+//  Profile collection from wizard/edit forms 
 
 function collectWizardForm() {
   const kw = $('pf-customKeywords').value.trim();
@@ -98,7 +98,7 @@ function profileToGeneratorShape(p) {
   };
 }
 
-// ── Dictionary generation via Web Worker ──────────────────────────────────────
+//  Dictionary generation via Web Worker 
 let dictWorker = null;
 
 function spawnWorker(profile, onProgress, onDone, onError) {
@@ -134,7 +134,7 @@ function spawnWorker(profile, onProgress, onDone, onError) {
   });
 }
 
-// ── Wizard Mode ───────────────────────────────────────────────────────────────
+//  Wizard Mode 
 
 let wizardStep = 1;
 const genStart = { time: 0 };
@@ -170,10 +170,10 @@ function startGeneration(profile) {
       $('gen-progress-fill').style.width = `${pct}%`;
       $('gen-progress-pct').textContent   = `${pct}%`;
       // Update sub-text for UX
-      if (pct < 40)  $('gen-sub-text').textContent = 'Analysing name combinations…';
-      else if (pct < 70) $('gen-sub-text').textContent = 'Adding birthday & year variants…';
-      else if (pct < 90) $('gen-sub-text').textContent = 'Saving to secure local storage…';
-      else               $('gen-sub-text').textContent = 'Finalising…';
+      if (pct < 40)  $('gen-sub-text').textContent = 'Analysing name combinations';
+      else if (pct < 70) $('gen-sub-text').textContent = 'Adding birthday & year variants';
+      else if (pct < 90) $('gen-sub-text').textContent = 'Saving to secure local storage';
+      else               $('gen-sub-text').textContent = 'Finalising';
     },
     (dictSize, generatedAt) => {
       const elapsed = ((Date.now() - genStart.time) / 1000).toFixed(1);
@@ -214,7 +214,7 @@ function initWizard() {
   });
 }
 
-// ── Management Mode ───────────────────────────────────────────────────────────
+//  Management Mode 
 
 const FIELD_LABELS = {
   firstName: 'First Name', lastName: 'Last Name',   nickname: 'Nickname',
@@ -260,7 +260,7 @@ function renderManageView(profile, meta) {
     $('dict-no-data').style.display  = 'none';
     $('mgmt-dict-size').textContent    = formatNumber(meta.size);
     $('mgmt-dict-date').textContent    = formatDate(meta.generatedAt);
-    $('mgmt-dict-version').textContent = meta.version || '—';
+    $('mgmt-dict-version').textContent = meta.version || '';
   } else {
     $('dict-has-data').style.display = 'none';
     $('dict-no-data').style.display  = '';
@@ -299,7 +299,7 @@ async function initManage() {
   const [profile, meta] = await Promise.all([getProfile(), getDictMeta()]);
   renderManageView(profile, meta);
 
-  // ── Edit ──
+  //  Edit 
   $('edit-profile-btn').addEventListener('click', () => {
     populateEditForm(profile);
     showManageSection('edit');
@@ -309,7 +309,7 @@ async function initManage() {
   $('edit-save-btn').addEventListener('click', async () => {
     const updated = collectEditForm();
     await saveProfile(updated);
-    showToast('Profile saved — regenerating attack dictionary…');
+    showToast('Profile saved  regenerating attack dictionary');
 
     // Trigger regen in regen section
     $('manage-view').style.display = '';
@@ -318,13 +318,13 @@ async function initManage() {
     triggerRegen(updated);
   });
 
-  // ── Regen ──
+  //  Regen 
   $('regen-btn').addEventListener('click', async () => {
     const p = await getProfile();
     if (p) triggerRegen(p);
   });
 
-  // ── Export ──
+  //  Export 
   $('export-btn').addEventListener('click', async () => {
     const json = await exportProfile();
     if (!json) { showToast('No profile to export', 'error'); return; }
@@ -336,7 +336,7 @@ async function initManage() {
     showToast('Profile exported');
   });
 
-  // ── Delete ──
+  //  Delete 
   $('delete-btn').addEventListener('click', () => {
     $('delete-modal').classList.add('active');
   });
@@ -372,7 +372,7 @@ function triggerRegen(profile) {
       $('dict-has-data').style.display = '';
       $('dict-no-data').style.display  = 'none';
       $('stale-warning').style.display = 'none';
-      showToast(`Attack profile updated — ${formatNumber(dictSize)} candidates`);
+      showToast(`Attack profile updated  ${formatNumber(dictSize)} candidates`);
       chrome.runtime.sendMessage({ type: 'PROFILE_UPDATED' }).catch(() => {});
     },
     (errMsg) => {
@@ -383,7 +383,7 @@ function triggerRegen(profile) {
   );
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+//  Init 
 
 async function init() {
   const isSetup   = window.location.hash === '#setup';

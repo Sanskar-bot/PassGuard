@@ -1,22 +1,22 @@
 /**
- * dashboard.js — VaultZero Security Dashboard
- * ─────────────────────────────────────────────────────────────────────────────
+ * dashboard.js  VaultZero Security Dashboard
+ * 
  * Loads profile, dict meta, and analysis history from chrome.storage.local
  * and renders the Security Dashboard UI.
  *
  * Responsibilities:
- *   • Hero stat cards (profile status, dict size, last generated, last analysis)
- *   • Profile details section (avatar, completion bar, field grid)
- *   • Dictionary status section (size, chunks, generated date)
- *   • Analysis history table (last 5, masked passwords)
+ *    Hero stat cards (profile status, dict size, last generated, last analysis)
+ *    Profile details section (avatar, completion bar, field grid)
+ *    Dictionary status section (size, chunks, generated date)
+ *    Analysis history table (last 5, masked passwords)
  *
- * All data is read-only here — edits happen in profile.html.
- * ─────────────────────────────────────────────────────────────────────────────
+ * All data is read-only here  edits happen in profile.html.
+ * 
  */
 
 import { getProfile, getDictMeta, getHistory } from '../../shared/profileStore.js';
 
-// ── DOM refs ──────────────────────────────────────────────────────────────────
+//  DOM refs 
 const $ = (id) => document.getElementById(id);
 
 // Hero cards
@@ -50,7 +50,7 @@ const historyEmpty     = $('history-empty');
 const historyTableWrap = $('history-table-wrap');
 const historyTbody     = $('history-tbody');
 
-// ── Profile field definitions ─────────────────────────────────────────────────
+//  Profile field definitions 
 const PROFILE_FIELD_DEFS = [
   { key: 'firstName',      label: 'First Name' },
   { key: 'lastName',       label: 'Last Name' },
@@ -67,7 +67,7 @@ const PROFILE_FIELD_DEFS = [
   { key: 'customKeywords', label: 'Custom Keywords' },
 ];
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+//  Init 
 (async function init() {
   const [profile, meta, history] = await Promise.all([
     getProfile(),
@@ -94,7 +94,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// ── Hero Cards ────────────────────────────────────────────────────────────────
+//  Hero Cards 
 function renderHeroCards(profile, meta, history) {
   // 1. Profile status
   if (profile) {
@@ -129,14 +129,14 @@ function renderHeroCards(profile, meta, history) {
     hcDateVal.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     hcDateSub.textContent = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   } else {
-    hcDateVal.textContent = '—';
+    hcDateVal.textContent = '';
     hcDateSub.textContent = 'Never generated';
   }
 
   // 4. Last analysis
   if (history.length > 0) {
     const last = history[0];
-    hcScoreVal.textContent = last.score !== undefined ? `${last.score}/100` : '—';
+    hcScoreVal.textContent = last.score !== undefined ? `${last.score}/100` : '';
     hcScoreSub.textContent = timeAgo(last.ts);
     if (last.risk) {
       const cls = riskClass(last.risk);
@@ -144,12 +144,12 @@ function renderHeroCards(profile, meta, history) {
       hcScoreRisk.className   = `hero-card-risk risk-chip ${cls}`;
     }
   } else {
-    hcScoreVal.textContent = '—';
+    hcScoreVal.textContent = '';
     hcScoreSub.textContent = 'No history yet';
   }
 }
 
-// ── Profile Section ───────────────────────────────────────────────────────────
+//  Profile Section 
 function renderProfileSection(profile) {
   if (!profile) {
     noProfileBlock.style.display = '';
@@ -177,8 +177,8 @@ function renderProfileSection(profile) {
   completionLabel.textContent  = `${filled}/${PROFILE_FIELD_DEFS.length} fields`;
 
   // Dates
-  const created = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-  const updated = profile.updatedAt ? new Date(profile.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const created = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  const updated = profile.updatedAt ? new Date(profile.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
   profileDates.innerHTML = `
     <div class="profile-date-item"><span class="profile-date-key">Created:</span> ${created}</div>
     <div class="profile-date-item"><span class="profile-date-key">Updated:</span> ${updated}</div>
@@ -202,14 +202,14 @@ function renderProfileSection(profile) {
   }).join('');
 }
 
-// ── Dictionary Section ────────────────────────────────────────────────────────
+//  Dictionary Section 
 function renderDictSection(meta, profile) {
   if (!meta || meta.size === 0) {
     dictStatusRow.innerHTML = `
       <div class="dict-no-dict">
         <p>${profile ? 'Your profile is ready but the attack dictionary hasn\'t been generated yet.' : 'Set up your profile first, then generate the attack dictionary.'}</p>
         <a href="../pages/profile.html" class="setup-btn" style="font-size:13px;padding:10px 22px;">
-          ${profile ? 'Generate Dictionary →' : 'Set Up Profile →'}
+          ${profile ? 'Generate Dictionary ' : 'Set Up Profile '}
         </a>
       </div>`;
     return;
@@ -217,7 +217,7 @@ function renderDictSection(meta, profile) {
 
   const generatedDate = meta.generatedAt
     ? new Date(meta.generatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : '—';
+    : '';
 
   dictStatusRow.innerHTML = `
     <div class="dict-stat">
@@ -226,7 +226,7 @@ function renderDictSection(meta, profile) {
       <span class="dict-stat-sub">CUPP-style personal entries</span>
     </div>
     <div class="dict-stat">
-      <span class="dict-stat-val">${meta.chunks || '—'}</span>
+      <span class="dict-stat-val">${meta.chunks || ''}</span>
       <span class="dict-stat-key">Storage Chunks</span>
       <span class="dict-stat-sub">~${Math.round(meta.size / (meta.chunks || 1)).toLocaleString()} entries each</span>
     </div>
@@ -238,7 +238,7 @@ function renderDictSection(meta, profile) {
   `;
 }
 
-// ── History Section ───────────────────────────────────────────────────────────
+//  History Section 
 function renderHistorySection(history) {
   if (!history || history.length === 0) {
     historyEmpty.style.display     = '';
@@ -255,17 +255,17 @@ function renderHistorySection(history) {
     const pRiskCls   = entry.found !== undefined
       ? (entry.found ? riskClass(entry.personalRisk || 'high') : 'risk-resistant')
       : 'risk-none';
-    const rank  = entry.found && entry.rank !== null ? `#${Number(entry.rank).toLocaleString()}` : '—';
+    const rank  = entry.found && entry.rank !== null ? `#${Number(entry.rank).toLocaleString()}` : '';
     const ts    = timeAgo(entry.ts);
     const pRiskLabel = entry.found !== undefined
       ? (entry.found ? (entry.personalRisk || 'Found') : 'Resistant')
-      : '—';
+      : '';
 
     return `
       <tr style="animation-delay:${i * 60}ms">
         <td><span class="hist-pw">${esc(entry.password || '***')}</span></td>
-        <td><span class="hist-score ${scoreClass}">${entry.score !== undefined ? entry.score : '—'}</span></td>
-        <td><span class="risk-chip ${gRiskCls}">${esc(entry.risk || '—')}</span></td>
+        <td><span class="hist-score ${scoreClass}">${entry.score !== undefined ? entry.score : ''}</span></td>
+        <td><span class="risk-chip ${gRiskCls}">${esc(entry.risk || '')}</span></td>
         <td><span class="risk-chip ${pRiskCls}">${pRiskLabel}</span></td>
         <td><span class="hist-rank">${rank}</span></td>
         <td><span class="hist-time">${ts}</span></td>
@@ -273,7 +273,7 @@ function renderHistorySection(history) {
   }).join('');
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 function countFilledFields(profile) {
   return PROFILE_FIELD_DEFS.filter(def => {
     const v = profile[def.key];
@@ -302,7 +302,7 @@ function scoreLevel(score) {
 }
 
 function timeAgo(ts) {
-  if (!ts) return '—';
+  if (!ts) return '';
   const diff = Date.now() - ts;
   const s = Math.floor(diff / 1000);
   if (s < 60)  return 'just now';

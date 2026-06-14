@@ -1,13 +1,13 @@
 /**
- * popup.js — VaultZero v2 Popup Controller
- * ─────────────────────────────────────────────────────────────────────────────
+ * popup.js  VaultZero v2 Popup Controller
+ * 
  * Orchestrates all three popup tabs:
- *   Tab 1 – Analyze:  Full 7-module analysis pipeline + personal risk row
- *   Tab 2 – Generate: Cryptographically secure password generator
+ *   Tab 1  Analyze:  Full 7-module analysis pipeline + personal risk row
+ *   Tab 2  Generate: Cryptographically secure password generator
  *                     with optional profile-aware validation
- *   Tab 3 – Profile:  Read-only profile summary + dict stats + actions
- *                     (no longer a manual form — that lives in profile.html)
- * ─────────────────────────────────────────────────────────────────────────────
+ *   Tab 3  Profile:  Read-only profile summary + dict stats + actions
+ *                     (no longer a manual form  that lives in profile.html)
+ * 
  */
 
 import { analyseStrength, entropyLabel } from '../../shared/strength.js';
@@ -21,9 +21,9 @@ import { generatePassword }              from '../../shared/generator.js';
 import { warmCache, lookup, invalidate, isReady } from '../../shared/dictCache.js';
 import { getProfile, getDictMeta, getHistory, addToHistory } from '../../shared/profileStore.js';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+//  Constants 
 const RING_R = 50;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_R; // ≈ 314.16
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_R; //  314.16
 
 const BREAKDOWN_MAX = {
   length: 25, variety: 20, entropy: 20,
@@ -40,7 +40,7 @@ const PROFILE_FIELDS = [
   'sportsTeam','gamerTag','commonAlias','customKeywords',
 ];
 
-// ── DOM refs ──────────────────────────────────────────────────────────────────
+//  DOM refs 
 const $ = (id) => document.getElementById(id);
 
 // Tabs
@@ -122,7 +122,7 @@ const ppLastPw    = $('pp-last-pw');
 const ppLastRisk  = $('pp-last-risk');
 const ppLastRank  = $('pp-last-rank');
 
-// ── State ─────────────────────────────────────────────────────────────────────
+//  State 
 let passwordVisible = false;
 let debounceTimer   = null;
 let currentMode     = 'secure';
@@ -130,7 +130,7 @@ let profileData     = null;
 let dictMeta        = null;
 let dictCacheReady  = false;
 
-// ── Init: load profile + dict meta + warm cache ───────────────────────────────
+//  Init: load profile + dict meta + warm cache 
 (async function init() {
   [profileData, dictMeta] = await Promise.all([getProfile(), getDictMeta()]);
 
@@ -171,7 +171,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// ── Tab switching ─────────────────────────────────────────────────────────────
+//  Tab switching 
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     tabBtns.forEach(b => b.classList.remove('active'));
@@ -184,7 +184,7 @@ tabBtns.forEach(btn => {
   });
 });
 
-// ── On popup open: try to read password from the active tab ───────────────────
+//  On popup open: try to read password from the active tab 
 async function initFromPage() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -204,7 +204,7 @@ async function initFromPage() {
   }
 }
 
-// ── Analyse pipeline ──────────────────────────────────────────────────────────
+//  Analyse pipeline 
 function analyse() {
   const password = passwordInput.value;
   const username = usernameInput.value.trim();
@@ -258,7 +258,7 @@ function analyse() {
   }
 }
 
-// ── Personal risk row (Tab 1) ─────────────────────────────────────────────────
+//  Personal risk row (Tab 1) 
 function renderPersonalRisk(password) {
   if (!dictCacheReady || !isReady()) {
     personalRiskRow.style.display = 'none';
@@ -270,12 +270,12 @@ function renderPersonalRisk(password) {
 
   let badgeText, badgeClass;
   if (found) {
-    if      (rank <= 100)  { badgeText = `🔴 Critical  (#${rank})`;  badgeClass = 'pr-critical'; }
-    else if (rank <= 1000) { badgeText = `🟠 High  (#${rank})`;      badgeClass = 'pr-high'; }
-    else if (rank <= 5000) { badgeText = `🟡 Medium  (#${rank})`;    badgeClass = 'pr-medium'; }
-    else                   { badgeText = `🟡 Low  (#${rank})`;       badgeClass = 'pr-low'; }
+    if      (rank <= 100)  { badgeText = ` Critical  (#${rank})`;  badgeClass = 'pr-critical'; }
+    else if (rank <= 1000) { badgeText = ` High  (#${rank})`;      badgeClass = 'pr-high'; }
+    else if (rank <= 5000) { badgeText = ` Medium  (#${rank})`;    badgeClass = 'pr-medium'; }
+    else                   { badgeText = ` Low  (#${rank})`;       badgeClass = 'pr-low'; }
   } else {
-    badgeText  = '🟢 Resistant';
+    badgeText  = ' Resistant';
     badgeClass = 'pr-safe';
   }
 
@@ -283,7 +283,7 @@ function renderPersonalRisk(password) {
   personalRiskBadge.className   = `personal-risk-badge ${badgeClass}`;
 }
 
-// ── Score ring ────────────────────────────────────────────────────────────────
+//  Score ring 
 function renderScore(scoreRes) {
   const { score, category, color, cssClass } = scoreRes;
 
@@ -302,7 +302,7 @@ function renderScore(scoreRes) {
   strengthLabel.className       = `strength-label ${cssClass}`;
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
+//  Stats 
 function renderStats(strength) {
   statEntropy.textContent = `${strength.entropy} bits`;
   statLength.textContent  = strength.length;
@@ -310,7 +310,7 @@ function renderStats(strength) {
   statVariety.textContent = `${strength.varietyCount}/4`;
 }
 
-// ── Char indicators ───────────────────────────────────────────────────────────
+//  Char indicators 
 function renderCharIndicators(strength) {
   const setChip = (el, active) => {
     el.classList.toggle('active',   active);
@@ -322,7 +322,7 @@ function renderCharIndicators(strength) {
   setChip(indSymbol, strength.hasSymbol);
 }
 
-// ── Issues ────────────────────────────────────────────────────────────────────
+//  Issues 
 function renderIssues(strength, wordlist, patterns, ucheck) {
   const issues = [];
   if (strength.length < 8)       issues.push({ sev: 'high',   text: 'Password is too short (< 8 characters)' });
@@ -353,7 +353,7 @@ function renderIssues(strength, wordlist, patterns, ucheck) {
   ).join('');
 }
 
-// ── Breakdown bars ────────────────────────────────────────────────────────────
+//  Breakdown bars 
 function renderBreakdown(breakdown) {
   breakdownList.innerHTML = Object.entries(breakdown).map(([key, val]) => {
     const max = BREAKDOWN_MAX[key];
@@ -370,7 +370,7 @@ function renderBreakdown(breakdown) {
   }).join('');
 }
 
-// ── Crack times ───────────────────────────────────────────────────────────────
+//  Crack times 
 function renderCrackTimes(crackTimes) {
   crackBody.innerHTML = crackTimes.map(ct => `
     <tr>
@@ -383,7 +383,7 @@ function renderCrackTimes(crackTimes) {
   ).join('');
 }
 
-// ── Suggestions ───────────────────────────────────────────────────────────────
+//  Suggestions 
 function renderSuggestions(suggestions) {
   suggList.innerHTML = suggestions.map((s, i) => `
     <div class="suggestion-card ${s.priority}" style="animation-delay:${i * 50}ms">
@@ -393,7 +393,7 @@ function renderSuggestions(suggestions) {
   ).join('');
 }
 
-// ── Input event listeners ─────────────────────────────────────────────────────
+//  Input event listeners 
 passwordInput.addEventListener('input', () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(analyse, 120);
@@ -417,7 +417,7 @@ copyBtn.addEventListener('click', () => {
   }
 });
 
-// ── Generator ─────────────────────────────────────────────────────────────────
+//  Generator 
 const PASSPHRASES = [
   ['coral','orbit','maple','seven'],['signal','frost','ember','quick'],
   ['noble','storm','lunar','brave'],['cobalt','river','prism','echo'],
@@ -485,7 +485,7 @@ function runGenerator() {
     // Profile-aware badge
     if (rejectPersonal && genPersonalBadge) {
       const { found } = lookup(pw);
-      genPersonalBadge.textContent  = found ? '⚠ In attack profile' : '✓ Not in attack profile';
+      genPersonalBadge.textContent  = found ? ' In attack profile' : ' Not in attack profile';
       genPersonalBadge.style.color  = found ? '#fca5a5' : '#86efac';
       genPersonalBadge.style.display = '';
     }
@@ -514,7 +514,7 @@ genUseBtn.addEventListener('click', () => {
   }
 });
 
-// ── Profile Tab (Tab 3) ───────────────────────────────────────────────────────
+//  Profile Tab (Tab 3) 
 
 async function renderProfileTab() {
   // Refresh from storage in case profile was updated in another tab
@@ -547,7 +547,7 @@ async function renderProfileTab() {
   }).length;
   const lastUpdated = profileData.updatedAt
     ? new Date(profileData.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : '—';
+    : '';
   ppMeta.textContent = `${filledCount}/${PROFILE_FIELDS.length} fields · Updated ${lastUpdated}`;
 
   // Dict stats
@@ -560,7 +560,7 @@ async function renderProfileTab() {
     ppDictNoData.style.display  = 'none';
   } else {
     ppDictSize.textContent = '0';
-    ppDictDate.textContent = '—';
+    ppDictDate.textContent = '';
     ppDictNoData.style.display = '';
   }
 
@@ -569,7 +569,7 @@ async function renderProfileTab() {
   if (history.length > 0) {
     const last = history[0];
     ppLastPw.textContent   = last.password;
-    ppLastRisk.textContent = last.risk || '—';
+    ppLastRisk.textContent = last.risk || '';
     ppLastRisk.style.color = riskColor(last.risk);
     ppLastRank.textContent = last.found && last.rank !== null ? `#${last.rank.toLocaleString()}` : 'Not in dict';
     ppLastAnalysis.style.display = '';
@@ -587,12 +587,12 @@ function riskColor(risk) {
   return '#86efac';
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
+//  Utilities 
 function flashButton(btn, tempText) {
   const orig = btn.textContent;
   btn.textContent = tempText;
   setTimeout(() => { btn.textContent = orig; }, 1500);
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+//  Init 
 runGenerator();

@@ -1,9 +1,9 @@
 /**
  * suggestions.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Rule-based suggestions engine.  Given the combined analysis results,
  * returns a prioritised list of actionable improvement tips.
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 /**
@@ -20,11 +20,11 @@
 export function generateSuggestions(strength, wordlist, patterns, username, scoreResult) {
   const tips = [];
 
-  // ── Critical (high priority) ─────────────────────────────────────────────
+  //  Critical (high priority) 
 
   if (strength.length < 8) {
     tips.push({ priority: "high", icon: "Length",
-      text: "Your password is too short. Use at least 8 characters — 12 or more is ideal." });
+      text: "Your password is too short. Use at least 8 characters  12 or more is ideal." });
   } else if (strength.length < 12) {
     tips.push({ priority: "medium", icon: "Length",
       text: "Consider increasing length to 12+ characters for significantly better security." });
@@ -43,35 +43,35 @@ export function generateSuggestions(strength, wordlist, patterns, username, scor
 
   if (username.contains) {
     tips.push({ priority: "high", icon: "Username",
-      text: "Your password contains your username — attackers will try this first. Remove it entirely." });
+      text: "Your password contains your username  attackers will try this first. Remove it entirely." });
   } else if (username.variation || username.nearMatch) {
     tips.push({ priority: "high", icon: "Username",
       text: "Your password is too similar to your username. Use an unrelated phrase." });
   } else if (username.reversed) {
     tips.push({ priority: "medium", icon: "Username",
-      text: "Your password contains your reversed username — still easy to guess." });
+      text: "Your password contains your reversed username  still easy to guess." });
   }
 
-  // ── Character variety ────────────────────────────────────────────────────
+  //  Character variety 
 
   if (!strength.hasUpper) {
     tips.push({ priority: "medium", icon: "Variety",
-      text: "Add uppercase letters (A–Z) to expand the character set." });
+      text: "Add uppercase letters (AZ) to expand the character set." });
   }
   if (!strength.hasLower) {
     tips.push({ priority: "medium", icon: "Variety",
-      text: "Add lowercase letters (a–z) — mixing cases makes passwords harder to crack." });
+      text: "Add lowercase letters (az)  mixing cases makes passwords harder to crack." });
   }
   if (!strength.hasDigit) {
     tips.push({ priority: "medium", icon: "Variety",
-      text: "Include numbers (0–9). Avoid placing them only at the end." });
+      text: "Include numbers (09). Avoid placing them only at the end." });
   }
   if (!strength.hasSymbol) {
     tips.push({ priority: "medium", icon: "Variety",
       text: "Add special characters (!@#$%^&*) for a much larger effective charset." });
   }
 
-  // ── Pattern warnings ─────────────────────────────────────────────────────
+  //  Pattern warnings 
 
   if (patterns.keyboard.found) {
     tips.push({ priority: "high", icon: "Pattern",
@@ -91,10 +91,10 @@ export function generateSuggestions(strength, wordlist, patterns, username, scor
   }
   if (patterns.leet.found && (wordlist.leetMatch || wordlist.leetSubstrings.length > 0)) {
     tips.push({ priority: "medium", icon: "Leet",
-      text: "Simple leet substitutions (@ for a, 0 for o) are well-known — attackers check these automatically." });
+      text: "Simple leet substitutions (@ for a, 0 for o) are well-known  attackers check these automatically." });
   }
 
-  // ── Dictionary word warnings ─────────────────────────────────────────────
+  //  Dictionary word warnings 
 
   if (wordlist.substringMatches.length > 0) {
     const words = wordlist.substringMatches.slice(0, 2).join('", "');
@@ -102,21 +102,21 @@ export function generateSuggestions(strength, wordlist, patterns, username, scor
       text: `Your password contains common word${wordlist.substringMatches.length > 1 ? "s" : ""} ("${words}"). Use random character sequences instead.` });
   }
 
-  // ── Positive reinforcement ────────────────────────────────────────────────
+  //  Positive reinforcement 
 
   if (tips.length === 0) {
     tips.push({ priority: "low", icon: "Status",
       text: "Great password! To stay safe, use a unique password for every account and store it in a password manager." });
   }
 
-  // ── General best-practice tips (always appended if score < 75) ───────────
+  //  General best-practice tips (always appended if score < 75) 
 
   if (scoreResult.score < 75) {
     tips.push({ priority: "low", icon: "Tip",
-      text: "Use a passphrase — four random words joined together are both memorable and strong (e.g. 'coffee-orbit-maple-7')." });
+      text: "Use a passphrase  four random words joined together are both memorable and strong (e.g. 'coffee-orbit-maple-7')." });
   }
 
-  // Sort: high → medium → low
+  // Sort: high  medium  low
   const order = { high: 0, medium: 1, low: 2 };
   tips.sort((a, b) => order[a.priority] - order[b.priority]);
 

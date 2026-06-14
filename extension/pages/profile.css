@@ -1,11 +1,11 @@
 /**
- * profile.css — VaultZero v2 Profile Setup & Management
+ * profile.css  VaultZero v2 Profile Setup & Management
  * Premium dark glassmorphism design
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+/*  Reset & Base  */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -67,7 +67,7 @@ body::before {
   z-index: 0;
 }
 
-/* ── Layout ──────────────────────────────────────────────────────────────── */
+/*  Layout  */
 .page-wrap {
   position: relative;
   z-index: 1;
@@ -76,7 +76,7 @@ body::before {
   padding: 0 24px 80px;
 }
 
-/* ── Header ──────────────────────────────────────────────────────────────── */
+/*  Header  */
 .page-header {
   display: flex;
   align-items: center;
@@ -136,7 +136,7 @@ body::before {
   box-shadow: 0 0 8px var(--accent-green);
 }
 
-/* ── Wizard ──────────────────────────────────────────────────────────────── */
+/*  Wizard  */
 .wizard-container { display: flex; flex-direction: column; gap: 0; }
 
 /* Step indicators */
@@ -197,7 +197,7 @@ body::before {
 }
 .step-connector.done { background: rgba(34,197,94,0.4); }
 
-/* ── Wizard Panels ───────────────────────────────────────────────────────── */
+/*  Wizard Panels  */
 .wizard-panel { display: none; animation: fadeSlideIn 0.3s ease both; }
 .wizard-panel.active { display: block; }
 
@@ -206,7 +206,7 @@ body::before {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Step 1: Welcome ─────────────────────────────────────────────────────── */
+/*  Step 1: Welcome  */
 .welcome-hero {
   text-align: center;
   padding: 40px 0 32px;
@@ -287,7 +287,7 @@ body::before {
 .feature-title { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
 .feature-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
 
-/* ── Step 2: Profile Form ────────────────────────────────────────────────── */
+/*  Step 2: Profile Form  */
 .form-section-title {
   font-size: 13px;
   font-weight: 700;
@@ -378,7 +378,7 @@ body::before {
 }
 .privacy-note svg { color: var(--accent-cyan); flex-shrink: 0; margin-top: 1px; }
 
-/* ── Step 3: Generation Progress ─────────────────────────────────────────── */
+/*  Step 3: Generation Progress  */
 .gen-progress-wrap {
   text-align: center;
   padding: 40px 0;
@@ -455,7 +455,7 @@ body::before {
 .done-stat-val { font-size: 22px; font-weight: 800; color: var(--accent-cyan); display: block; }
 .done-stat-key { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
 
-/* ── Management View ─────────────────────────────────────────────────────── */
+/*  Management View  */
 .manage-view { display: flex; flex-direction: column; gap: 20px; }
 
 .profile-card {
@@ -593,7 +593,7 @@ body::before {
 }
 .stale-warning svg { flex-shrink: 0; }
 
-/* ── Buttons ──────────────────────────────────────────────────────────────── */
+/*  Buttons  */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -659,7 +659,7 @@ body::before {
 }
 .form-actions-right { display: flex; gap: 10px; align-items: center; }
 
-/* ── Delete confirm modal ─────────────────────────────────────────────────── */
+/*  Delete confirm modal  */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -702,7 +702,7 @@ body::before {
 .modal-body  { font-size: 13px; color: var(--text-secondary); text-align: center; line-height: 1.6; margin-bottom: 24px; }
 .modal-actions { display: flex; gap: 10px; justify-content: center; }
 
-/* ── Toast ────────────────────────────────────────────────────────────────── */
+/*  Toast  */
 .toast {
   position: fixed;
   bottom: 28px;
@@ -732,7 +732,7 @@ body::before {
 .toast.success { border-color: rgba(34,197,94,0.4); color: var(--accent-green); }
 .toast.error   { border-color: rgba(239,68,68,0.4);  color: var(--accent-red); }
 
-/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+/*  Scrollbar  */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }

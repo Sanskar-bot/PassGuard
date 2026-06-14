@@ -1,6 +1,6 @@
 /**
  * bruteforce.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Estimates how long it would take an attacker to crack a password under
  * four realistic attack scenarios, based on:
  *
@@ -8,7 +8,7 @@
  *   avgTime      = combinations / (2 × guessesPerSecond)
  *
  * The character-set size comes from strength.js (analyseStrength).
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 /**
@@ -19,25 +19,25 @@ export const ATTACK_SCENARIOS = [
   {
     id:    "online_throttled",
     label: "Online (throttled)",
-    desc:  "Rate-limited web login — ~10 attempts/sec",
+    desc:  "Rate-limited web login  ~10 attempts/sec",
     gps:   10,           // guesses per second
   },
   {
     id:    "online_fast",
     label: "Online (no limit)",
-    desc:  "Unthrottled online attack — ~1,000/sec",
+    desc:  "Unthrottled online attack  ~1,000/sec",
     gps:   1_000,
   },
   {
     id:    "offline_slow",
     label: "Offline (bcrypt)",
-    desc:  "Offline attack on bcrypt hashes — ~10K/sec",
+    desc:  "Offline attack on bcrypt hashes  ~10K/sec",
     gps:   10_000,
   },
   {
     id:    "offline_fast",
     label: "Offline (MD5/GPU)",
-    desc:  "GPU-accelerated MD5 cracking — ~10B/sec",
+    desc:  "GPU-accelerated MD5 cracking  ~10B/sec",
     gps:   10_000_000_000,
   },
 ];

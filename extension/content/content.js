@@ -1,17 +1,17 @@
 /**
- * content.js — VaultZero Content Script
- * ─────────────────────────────────────────────────────────────────────────────
+ * content.js  VaultZero Content Script
+ * 
  * Injects a full-analysis strength widget next to every password input.
  *
  * Features (always expanded, no button required):
- *   • Score ring + strength bar
- *   • Entropy / length / charset stats
- *   • All detected issues with explanations
- *   • Crack time estimate
- *   • Personalized targeted-risk badge (when dict cache is ready)
+ *    Score ring + strength bar
+ *    Entropy / length / charset stats
+ *    All detected issues with explanations
+ *    Crack time estimate
+ *    Personalized targeted-risk badge (when dict cache is ready)
  *
  * Uses Shadow DOM so styles never leak into the host page.
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 (function () {
@@ -20,7 +20,7 @@
   if (window.__vaultzeroInjected) return;
   window.__vaultzeroInjected = true;
 
-  // ── Settings ────────────────────────────────────────────────────────────────
+  //  Settings 
   let settings = {
     enableWidget:       true,
     enablePersonalized: true,
@@ -37,16 +37,16 @@
     }
   });
 
-  // ── State ───────────────────────────────────────────────────────────────────
+  //  State 
   const widgetMap = new WeakMap();
   let observerTimeout = null;
 
-  // ── Analysis modules ─────────────────────────────────────────────────────────
+  //  Analysis modules 
   let analysisReady = false;
   let analyseStrength, detectPatterns, checkWordlist, checkUsername,
       computeScore, estimateCrackTimes;
 
-  // ── Dict cache ───────────────────────────────────────────────────────────────
+  //  Dict cache 
   let vzDictLookup  = null;
   let vzDictReady   = false;
   let vzDictLoading = false;
@@ -96,7 +96,7 @@
     }
   }
 
-  // ── Widget injection ─────────────────────────────────────────────────────────
+  //  Widget injection 
   function injectWidget(input) {
     if (!settings.enableWidget) return;
     if (widgetMap.has(input)) return;
@@ -156,7 +156,7 @@
     input.addEventListener('keydown', onValueChange);
     input.addEventListener('change',  onValueChange);
 
-    // BUG FIX: Polling fallback — React keeps value in a fiber, not DOM.
+    // BUG FIX: Polling fallback  React keeps value in a fiber, not DOM.
     // Poll every 250 ms while the field is focused to catch any missed changes.
     let pollInterval = null;
 
@@ -190,7 +190,7 @@
     }
   }
 
-  // ── Widget DOM ───────────────────────────────────────────────────────────────
+  //  Widget DOM 
   function buildWidgetDOM() {
     const widget = document.createElement('div');
     widget.className = 'vz-widget';
@@ -202,7 +202,7 @@
             <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V6L12 2z"/>
           </svg>
         </span>
-        <span class="vz-label" id="vz-label">Enter password…</span>
+        <span class="vz-label" id="vz-label">Enter password</span>
         <span class="vz-score" id="vz-score"></span>
         <span class="vz-privacy">Local</span>
       </div>
@@ -212,7 +212,7 @@
         <div class="vz-bar-fill" id="vz-bar" style="width:0%"></div>
       </div>
 
-      <button class="vz-toggle-btn" id="vz-toggle-btn" style="display:none">View more ▼</button>
+      <button class="vz-toggle-btn" id="vz-toggle-btn" style="display:none">View more </button>
 
       <!-- Full analysis (hidden by default) -->
       <div class="vz-analysis" id="vz-analysis" style="display:none">
@@ -220,19 +220,19 @@
         <!-- Stats row -->
         <div class="vz-stats-row">
           <div class="vz-stat">
-            <span class="vz-stat-val" id="vz-entropy">—</span>
+            <span class="vz-stat-val" id="vz-entropy"></span>
             <span class="vz-stat-key">Entropy</span>
           </div>
           <div class="vz-stat">
-            <span class="vz-stat-val" id="vz-length">—</span>
+            <span class="vz-stat-val" id="vz-length"></span>
             <span class="vz-stat-key">Length</span>
           </div>
           <div class="vz-stat">
-            <span class="vz-stat-val" id="vz-charset">—</span>
+            <span class="vz-stat-val" id="vz-charset"></span>
             <span class="vz-stat-key">Charset</span>
           </div>
           <div class="vz-stat">
-            <span class="vz-stat-val" id="vz-variety">—</span>
+            <span class="vz-stat-val" id="vz-variety"></span>
             <span class="vz-stat-key">Classes</span>
           </div>
         </div>
@@ -247,13 +247,13 @@
 
         <!-- All issues with explanations -->
         <div class="vz-section" id="vz-issues-section" style="display:none">
-          <div class="vz-section-title">⚠ Issues Found</div>
+          <div class="vz-section-title"> Issues Found</div>
           <div class="vz-issues-list" id="vz-issues-list"></div>
         </div>
 
         <!-- Crack time -->
         <div class="vz-section" id="vz-crack-section" style="display:none">
-          <div class="vz-section-title">⏱ Estimated Crack Time</div>
+          <div class="vz-section-title"> Estimated Crack Time</div>
           <div class="vz-crack-list" id="vz-crack-list"></div>
         </div>
 
@@ -272,17 +272,17 @@
       const isExpanded = analysis.style.display !== 'none';
       if (isExpanded) {
         analysis.style.display = 'none';
-        toggleBtn.textContent = 'View more ▼';
+        toggleBtn.textContent = 'View more ';
       } else {
         analysis.style.display = '';
-        toggleBtn.textContent = 'View less ▲';
+        toggleBtn.textContent = 'View less ';
       }
     });
 
     return widget;
   }
 
-  // ── Run analysis ─────────────────────────────────────────────────────────────
+  //  Run analysis 
   async function runAnalysis(input, state) {
     const password = input.value;
     if (password === state.lastPassword) return;
@@ -296,14 +296,14 @@
     const toggleBtn  = shadow.getElementById('vz-toggle-btn');
 
     if (password.length === 0) {
-      label.textContent   = 'Enter password…';
+      label.textContent   = 'Enter password';
       label.className     = 'vz-label';
       scoreEl.textContent = '';
       bar.style.width     = '0%';
       // Reset expansion state
       analysis.style.display = 'none';
       toggleBtn.style.display = 'none';
-      toggleBtn.textContent = 'View more ▼';
+      toggleBtn.textContent = 'View more ';
       return;
     }
 
@@ -326,7 +326,7 @@
 
     const { score, category, color, baseScore, personalPenalty } = scoreRes;
 
-    // ── Header ────────────────────────────────────────────────────────────────
+    //  Header 
     label.textContent = category;
     label.className   = `vz-label vz-${scoreRes.cssClass}`;
     scoreEl.textContent = `${score}/100`;
@@ -337,19 +337,19 @@
     toggleBtn.style.display = '';
     // We do NOT change analysis.style.display here; it stays however the user left it (or hidden by default)
 
-    // ── Stats ─────────────────────────────────────────────────────────────────
+    //  Stats 
     shadow.getElementById('vz-entropy').textContent = `${strength.entropy} bits`;
     shadow.getElementById('vz-length').textContent  = `${strength.length}`;
     shadow.getElementById('vz-charset').textContent = `${strength.charsetSize}`;
     shadow.getElementById('vz-variety').textContent = `${strength.varietyCount}/4`;
 
-    // ── Char chips ────────────────────────────────────────────────────────────
+    //  Char chips 
     setChip(shadow.getElementById('chip-lower'),  strength.hasLower);
     setChip(shadow.getElementById('chip-upper'),  strength.hasUpper);
     setChip(shadow.getElementById('chip-digit'),  strength.hasDigit);
     setChip(shadow.getElementById('chip-symbol'), strength.hasSymbol);
 
-    // ── All issues with explanations ──────────────────────────────────────────
+    //  All issues with explanations 
     const issues = collectAllIssues(strength, wordlist, patterns, ucheck);
     const issuesSection = shadow.getElementById('vz-issues-section');
     const issuesList    = shadow.getElementById('vz-issues-list');
@@ -364,11 +364,11 @@
         </div>`).join('');
       issuesSection.style.display = '';
     } else {
-      issuesList.innerHTML = '<div class="vz-all-good">✓ No significant issues found</div>';
+      issuesList.innerHTML = '<div class="vz-all-good"> No significant issues found</div>';
       issuesSection.style.display = '';
     }
 
-    // ── Crack times ───────────────────────────────────────────────────────────
+    //  Crack times 
     try {
       const crackTimes    = estimateCrackTimes(strength.charsetSize, strength.length);
       const crackSection  = shadow.getElementById('vz-crack-section');
@@ -386,31 +386,31 @@
       }
     } catch (_) { /* bruteforce module optional */ }
 
-    // ── Personalized risk ─────────────────────────────────────────────────────
+    //  Personalized risk 
     const personalEl = shadow.getElementById('vz-personal-risk');
     if (personalResult) {
       const { found, rank } = personalResult;
       let riskText, riskClass, riskReason;
       if (found) {
         if (rank <= 100) {
-          riskText   = `🔴 Targeted Risk: Critical — #${rank} targeted guess`;
+          riskText   = ` Targeted Risk: Critical  #${rank} targeted guess`;
           riskReason = 'This exact password (or a variant) is within the top 100 most likely guesses for you specifically. Score reduced by 50 pts.';
           riskClass  = 'vz-risk-critical';
         } else if (rank <= 1000) {
-          riskText   = `🟠 Targeted Risk: High — #${rank} targeted guess`;
+          riskText   = ` Targeted Risk: High  #${rank} targeted guess`;
           riskReason = 'An attacker who knows personal details about you would guess this early in their attack. Score reduced by 35 pts.';
           riskClass  = 'vz-risk-high';
         } else if (rank <= 5000) {
-          riskText   = `🟡 Targeted Risk: Medium — #${rank} targeted guess`;
+          riskText   = ` Targeted Risk: Medium  #${rank} targeted guess`;
           riskReason = 'This password contains patterns derived from your profile and appears in the mid-range of a targeted attack list. Score reduced by 20 pts.';
           riskClass  = 'vz-risk-medium';
         } else {
-          riskText   = `🟡 Targeted Risk: Low — #${rank} targeted guess`;
-          riskReason = 'Found in your personalized dictionary, but ranked low — still detectable by a determined targeted attacker. Score reduced by 10 pts.';
+          riskText   = ` Targeted Risk: Low  #${rank} targeted guess`;
+          riskReason = 'Found in your personalized dictionary, but ranked low  still detectable by a determined targeted attacker. Score reduced by 10 pts.';
           riskClass  = 'vz-risk-low';
         }
       } else {
-        riskText   = '🟢 Targeted Attack: Resistant';
+        riskText   = ' Targeted Attack: Resistant';
         riskReason = 'This password does not match any entry in your personalized attack dictionary.';
         riskClass  = 'vz-risk-safe';
       }
@@ -423,7 +423,7 @@
       personalEl.style.display = 'none';
     }
 
-    // ── Background badge update ───────────────────────────────────────────────
+    //  Background badge update 
     try {
       chrome.runtime.sendMessage({
         type: 'SCORE_UPDATE', score, category, color, fieldCount: 1,
@@ -431,7 +431,7 @@
     } catch (_) {}
   }
 
-  // ── Issue collector (all issues with reasons) ─────────────────────────────
+  //  Issue collector (all issues with reasons) 
   function collectAllIssues(strength, wordlist, patterns, ucheck) {
     const issues = [];
 
@@ -441,7 +441,7 @@
         reason: 'This password is on widely-known breach lists and will be tried first by any attacker.' });
     if (wordlist.leetMatch)
       issues.push({ sev: 'high', title: 'Leet-speak variation of a common password',
-        reason: 'Replacing letters with numbers (e.g. a→4, e→3) is a well-known trick that password crackers specifically test.' });
+        reason: 'Replacing letters with numbers (e.g. a4, e3) is a well-known trick that password crackers specifically test.' });
     if (ucheck.contains)
       issues.push({ sev: 'high', title: 'Contains your username',
         reason: 'Including your username makes the password trivially guessable once an attacker knows who you are.' });
@@ -461,7 +461,7 @@
         reason: 'Sequential runs of letters or numbers drastically reduce the effective search space for crackers.' });
     if (patterns.repeats.found)
       issues.push({ sev: 'medium', title: `Repeated characters: "${(patterns.repeats.matches || [])[0] || ''}"`,
-        reason: 'Repeated characters lower entropy significantly — crackers specifically look for these patterns.' });
+        reason: 'Repeated characters lower entropy significantly  crackers specifically look for these patterns.' });
     if (patterns.dates && patterns.dates.found)
       issues.push({ sev: 'medium', title: `Date-like pattern: "${(patterns.dates.matches || [])[0] || ''}"`,
         reason: 'Dates (birthdays, anniversaries) are high-priority guesses in both generic and targeted attacks.' });
@@ -487,7 +487,7 @@
         reason: 'Mixing in digits expands the character pool from 52 to 62, adding meaningful entropy.' });
     if (!strength.hasSymbol)
       issues.push({ sev: 'low', title: 'No special characters',
-        reason: 'Symbols (!, @, #, $…) expand the charset to 95, greatly increasing brute-force time.' });
+        reason: 'Symbols (!, @, #, $) expand the charset to 95, greatly increasing brute-force time.' });
     if (strength.length < 12 && strength.length >= 8)
       issues.push({ sev: 'low', title: `Could be longer (${strength.length} chars)`,
         reason: 'Each additional character multiplies cracking difficulty. 12+ characters is recommended for sensitive accounts.' });
@@ -512,7 +512,7 @@
     document.querySelectorAll('.__vz-widget-host').forEach(el => el.remove());
   }
 
-  // ── MutationObserver ─────────────────────────────────────────────────────────
+  //  MutationObserver 
   function scanForPasswordFields() {
     const inputs = document.querySelectorAll('input[type="password"]');
     inputs.forEach(injectWidget);
@@ -534,7 +534,7 @@
   else
     scanForPasswordFields();
 
-  // ── Widget CSS ────────────────────────────────────────────────────────────────
+  //  Widget CSS 
   function getWidgetCSS() {
     return `
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -555,7 +555,7 @@
         transition: all 0.2s ease;
       }
 
-      /* ── Header ── */
+      /*  Header  */
       .vz-header {
         display: flex; align-items: center; gap: 7px;
         margin-bottom: 7px;
@@ -580,7 +580,7 @@
         padding: 2px 5px; border-radius: 4px;
       }
 
-      /* ── Bar ── */
+      /*  Bar  */
       .vz-bar-track {
         height: 3px; background: rgba(255,255,255,0.07);
         border-radius: 2px; overflow: hidden; margin-bottom: 9px;
@@ -590,7 +590,7 @@
         transition: width 0.4s ease, background 0.3s ease;
       }
 
-      /* ── Toggle Button ── */
+      /*  Toggle Button  */
       .vz-toggle-btn {
         width: 100%;
         background: transparent;
@@ -609,7 +609,7 @@
       }
       .vz-toggle-btn:hover { color: #e2e8f0; }
 
-      /* ── Stats row ── */
+      /*  Stats row  */
       .vz-stats-row {
         display: flex; gap: 6px; margin-bottom: 7px;
       }
@@ -631,7 +631,7 @@
         font-weight: 600; margin-top: 1px;
       }
 
-      /* ── Char chips ── */
+      /*  Char chips  */
       .vz-chips { display: flex; gap: 5px; margin-bottom: 9px; }
       .vz-chip {
         flex: 1; text-align: center; padding: 3px 0;
@@ -651,7 +651,7 @@
         color: rgba(239,68,68,0.5);
       }
 
-      /* ── Sections ── */
+      /*  Sections  */
       .vz-section { margin-bottom: 8px; }
       .vz-section-title {
         font-size: 9px; font-weight: 800; text-transform: uppercase;
@@ -660,7 +660,7 @@
         border-bottom: 1px solid rgba(255,255,255,0.05);
       }
 
-      /* ── Issues list ── */
+      /*  Issues list  */
       .vz-issues-list { display: flex; flex-direction: column; gap: 4px; }
 
       .vz-issue {
@@ -697,7 +697,7 @@
         border: 1px solid rgba(34,197,94,0.2); border-radius: 6px;
       }
 
-      /* ── Crack times ── */
+      /*  Crack times  */
       .vz-crack-list { display: flex; flex-direction: column; gap: 3px; }
       .vz-crack-row {
         display: flex; align-items: center; justify-content: space-between;
@@ -716,7 +716,7 @@
       .vz-crack-moderate { color: #84cc16; }
       .vz-crack-safe     { color: #22c55e; }
 
-      /* ── Personalized risk ── */
+      /*  Personalized risk  */
       .vz-personal-risk {
         margin-top: 6px;
         border-radius: 6px;
@@ -741,10 +741,10 @@
     `;
   }
 
-  // ── Popup ↔ Content Bridge (INSIDE IIFE — has access to all scoped vars) ────
+  //  Popup  Content Bridge (INSIDE IIFE  has access to all scoped vars) 
   // BUG FIX: Was previously outside the IIFE, so chrome.runtime.onMessage
   // callback had no access to IIFE-scoped variables like loadDictCache,
-  // vzDictReady, etc. — caused ReferenceErrors on every message.
+  // vzDictReady, etc.  caused ReferenceErrors on every message.
   try {
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'GET_PASSWORD') {

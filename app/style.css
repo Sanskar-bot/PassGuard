@@ -1,12 +1,12 @@
-/* ──────────────────────────────────────────────────────────────────────────────
-   style.css — Password Strength Analyzer
+/* 
+   style.css  Password Strength Analyzer
    Dark glassmorphism design system with premium micro-animations.
-   ─────────────────────────────────────────────────────────────────────────── */
+    */
 
-/* ── Google Fonts ──────────────────────────────────────────────────────────── */
+/*  Google Fonts  */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+/*  Design Tokens  */
 :root {
   /* Background layers */
   --bg-base:       #050816;
@@ -60,7 +60,7 @@
   --t-slow:   400ms ease;
 }
 
-/* ── Reset ─────────────────────────────────────────────────────────────────── */
+/*  Reset  */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
 
@@ -80,7 +80,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: var(--r-pill); }
 
-/* ── Floating background orbs ──────────────────────────────────────────────── */
+/*  Floating background orbs  */
 body::before, body::after {
   content: "";
   position: fixed;
@@ -100,7 +100,7 @@ body::after {
   background: rgba(168,85,247,0.10);
 }
 
-/* ── Layout ────────────────────────────────────────────────────────────────── */
+/*  Layout  */
 .page-wrapper {
   position: relative;
   z-index: 1;
@@ -109,7 +109,7 @@ body::after {
   padding: var(--sp-lg) var(--sp-md);
 }
 
-/* ── Header ────────────────────────────────────────────────────────────────── */
+/*  Header  */
 .site-header {
   text-align: center;
   padding: var(--sp-2xl) 0 var(--sp-xl);
@@ -161,7 +161,7 @@ body::after {
   margin: 0 auto;
 }
 
-/* ── Input section ─────────────────────────────────────────────────────────── */
+/*  Input section  */
 .input-section {
   display: grid;
   gap: var(--sp-md);
@@ -241,7 +241,7 @@ body::after {
   border-color: var(--border-hover);
 }
 
-/* ── Strength bar ──────────────────────────────────────────────────────────── */
+/*  Strength bar  */
 .strength-bar-track {
   height: 6px;
   background: rgba(255,255,255,0.06);
@@ -268,7 +268,7 @@ body::after {
 .strength-label.strong      { color: var(--c-strong); }
 .strength-label.very-strong { color: var(--c-very-strong); }
 
-/* ── Char class indicators ─────────────────────────────────────────────────── */
+/*  Char class indicators  */
 .char-indicators {
   display: flex;
   gap: var(--sp-sm);
@@ -306,7 +306,7 @@ body::after {
 }
 .char-ind.inactive .ind-icon { background: rgba(255,255,255,0.06); color: var(--text-muted); }
 
-/* ── Results grid ──────────────────────────────────────────────────────────── */
+/*  Results grid  */
 .hidden { display: none !important; }
 
 .empty-state {
@@ -325,7 +325,7 @@ body::after {
 }
 @media (max-width: 768px) { .results-grid { grid-template-columns: 1fr; } }
 
-/* ── Score ring card ───────────────────────────────────────────────────────── */
+/*  Score ring card  */
 .score-card {
   text-align: center;
   padding: var(--sp-xl) var(--sp-lg);
@@ -374,7 +374,7 @@ body::after {
 .score-category.strong      { color: var(--c-strong); }
 .score-category.very-strong { color: var(--c-very-strong); }
 
-/* ── Breakdown bars ────────────────────────────────────────────────────────── */
+/*  Breakdown bars  */
 .section-title {
   font-size: 0.72rem;
   font-weight: 700;
@@ -416,7 +416,7 @@ body::after {
   font-size: 0.72rem;
 }
 
-/* ── Stats row ─────────────────────────────────────────────────────────────── */
+/*  Stats row  */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -444,7 +444,7 @@ body::after {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* ── Issues panel ──────────────────────────────────────────────────────────── */
+/*  Issues panel  */
 .issues-panel {
   background: rgba(239,68,68,0.06);
   border: 1px solid rgba(239,68,68,0.2);
@@ -480,7 +480,7 @@ body::after {
 .issue-medium { color: #fde68a; }
 .issue-low    { color: var(--text-secondary); }
 
-/* ── Crack time table ──────────────────────────────────────────────────────── */
+/*  Crack time table  */
 .crack-table {
   width: 100%;
   border-collapse: collapse;
@@ -519,7 +519,7 @@ body::after {
 .crack-moderate { color: var(--c-moderate); }
 .crack-safe     { color: var(--c-safe); }
 
-/* ── Suggestions ───────────────────────────────────────────────────────────── */
+/*  Suggestions  */
 .suggestions-list { display: flex; flex-direction: column; gap: var(--sp-sm); }
 .suggestion-card {
   display: flex;
@@ -540,7 +540,7 @@ body::after {
 .suggestion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
 .suggestion-text { color: var(--text-secondary); line-height: 1.5; }
 
-/* ── Generator section ─────────────────────────────────────────────────────── */
+/*  Generator section  */
 .generator-section { margin-top: var(--sp-xl); }
 .generator-grid {
   display: grid;
@@ -695,10 +695,10 @@ input[type=range]::-webkit-slider-thumb:hover {
   border-color: var(--border-hover);
 }
 
-/* ── Entropy meter in stats ─────────────────────────────────────────────────── */
+/*  Entropy meter in stats  */
 .entropy-label { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; }
 
-/* ── Footer ────────────────────────────────────────────────────────────────── */
+/*  Footer  */
 .site-footer {
   text-align: center;
   padding: var(--sp-xl) 0 var(--sp-lg);
@@ -710,7 +710,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 .site-footer a { color: #a78bfa; text-decoration: none; }
 .site-footer a:hover { text-decoration: underline; }
 
-/* ── Animations ────────────────────────────────────────────────────────────── */
+/*  Animations  */
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -723,22 +723,22 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .results-grid { animation: fade-in var(--t-slow) ease; }
 
-/* ── Responsive tweaks ─────────────────────────────────────────────────────── */
+/*  Responsive tweaks  */
 @media (max-width: 520px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .char-indicators { flex-direction: column; }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
+/* 
    Advanced Personalized Attack Analysis
-   ══════════════════════════════════════════════════════════════════════════════ */
+    */
 
 .personal-attack-section {
   margin-top: var(--sp-xl);
   animation: fade-in var(--t-slow) ease;
 }
 
-/* ── CTA card ───────────────────────────────────────────────────────────────── */
+/*  CTA card  */
 .personal-cta-card {
   background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.06) 100%);
   border-color: rgba(139,92,246,0.2);
@@ -797,7 +797,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 .btn-personal-run:active { transform: translateY(0); }
 
-/* ── Form card ──────────────────────────────────────────────────────────────── */
+/*  Form card  */
 .personal-form-card {
   margin-bottom: var(--sp-md);
   animation: slide-in var(--t-normal) ease;
@@ -885,7 +885,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .personal-generate-btn { flex: 1; min-width: 160px; }
 
-/* ── Loading card ───────────────────────────────────────────────────────────── */
+/*  Loading card  */
 .personal-loading-card {
   margin-bottom: var(--sp-md);
 }
@@ -923,7 +923,7 @@ input[type=range]::-webkit-slider-thumb:hover {
   color: var(--text-muted);
 }
 
-/* ── Results card ───────────────────────────────────────────────────────────── */
+/*  Results card  */
 .personal-results-card {
   animation: slide-in var(--t-slow) ease;
   display: flex;
@@ -1105,7 +1105,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .personal-explanation-list li::before {
-  content: "›";
+  content: "";
   color: #8b5cf6;
   font-weight: 700;
   flex-shrink: 0;

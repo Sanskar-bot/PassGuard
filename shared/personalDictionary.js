@@ -1,17 +1,17 @@
 /**
  * personalDictionary.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Public API for the Personalized Attack Analysis module.
  *
  * Orchestrates:
- *   1. generatePersonalDictionary()  — builds the word list
- *   2. findPasswordInDictionary()    — checks if password is in list
- *   3. computePersonalScore()        — 0–100 resistance score
- *   4. computeRiskLevel()            — Critical / High / Medium / Low / Safe
- *   5. generateRiskExplanation()     — human-readable bullet points
+ *   1. generatePersonalDictionary()   builds the word list
+ *   2. findPasswordInDictionary()     checks if password is in list
+ *   3. computePersonalScore()         0100 resistance score
+ *   4. computeRiskLevel()             Critical / High / Medium / Low / Safe
+ *   5. generateRiskExplanation()      human-readable bullet points
  *
  * This is the only module that app.js needs to import.
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  */
 
 import { generatePersonalDictionary }  from './personalDictionaryGenerator.js';
@@ -25,7 +25,7 @@ import {
 /**
  * Run the full personalized attack analysis pipeline.
  *
- * Designed for lazy execution — call this only when the user explicitly
+ * Designed for lazy execution  call this only when the user explicitly
  * requests it (button click). Never run on keystrokes.
  *
  * @param {string} password   The password being tested

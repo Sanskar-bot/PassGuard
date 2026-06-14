@@ -1,6 +1,6 @@
 /**
  * app.js
- * ─────────────────────────────────────────────────────────────────────────────
+ * 
  * Main orchestrator for the Password Strength Analyzer.
  *
  * Wires all analysis modules together and drives the UI:
@@ -9,9 +9,9 @@
  *   3. Updates the DOM with results, score ring, crack-time table, suggestions
  *
  * Module pipeline:
- *   analyseStrength → detectPatterns → checkWordlist → checkUsername
- *     → computeScore → estimateCrackTimes → generateSuggestions
- * ─────────────────────────────────────────────────────────────────────────────
+ *   analyseStrength  detectPatterns  checkWordlist  checkUsername
+ *      computeScore  estimateCrackTimes  generateSuggestions
+ * 
  */
 
 import { analyseStrength, entropyLabel }   from "../shared/strength.js";
@@ -25,7 +25,7 @@ import { generatePassword }                from "../shared/generator.js";
 import { runPersonalizedAnalysis,
          downloadDictionary }              from "../shared/personalDictionary.js";
 
-// ── DOM References ────────────────────────────────────────────────────────────
+//  DOM References 
 const passwordInput   = document.getElementById("password-input");
 const usernameInput   = document.getElementById("username-input");
 const toggleVisBtn    = document.getElementById("toggle-visibility");
@@ -72,7 +72,7 @@ const genUpper         = document.getElementById("gen-upper");
 const genDigits        = document.getElementById("gen-digits");
 const genSymbols       = document.getElementById("gen-symbols");
 
-// ── Personal Attack Analysis DOM refs ─────────────────────────────────────────
+//  Personal Attack Analysis DOM refs 
 const personalSection      = document.getElementById("personal-attack-section");
 const personalCtaCard      = document.getElementById("personal-cta-card");
 const showPersonalFormBtn  = document.getElementById("show-personal-form-btn");
@@ -96,17 +96,17 @@ const paScoreFill    = document.getElementById("pa-score-fill");
 const paRiskBadge    = document.getElementById("pa-risk-badge");
 const paExplanList   = document.getElementById("pa-explanation-list");
 
-// ── State ─────────────────────────────────────────────────────────────────────
+//  State 
 let debounceTimer    = null;
 let passwordVisible  = false;
 let lastDictionary   = [];    // holds the last generated dictionary for download
 let lastProfileName  = '';    // used in the download filename
 
-// ── SVG Score Ring constants ──────────────────────────────────────────────────
-// The ring is a circle with r=54, so circumference ≈ 339.3
+//  SVG Score Ring constants 
+// The ring is a circle with r=54, so circumference  339.3
 const RING_CIRCUMFERENCE = 2 * Math.PI * 54;
 
-// ── Utility ───────────────────────────────────────────────────────────────────
+//  Utility 
 function setRingProgress(score) {
   const progress = score / 100;
   const offset   = RING_CIRCUMFERENCE * (1 - progress);
@@ -127,7 +127,7 @@ function copyToClipboard(text, btn) {
   });
 }
 
-// ── Core analysis pipeline ────────────────────────────────────────────────────
+//  Core analysis pipeline 
 function analyse() {
   const password = passwordInput.value;
   const username = usernameInput.value.trim();
@@ -164,7 +164,7 @@ function analyse() {
   showPersonalAttackSection();
 }
 
-// ── Score ring ────────────────────────────────────────────────────────────────
+//  Score ring 
 function renderScore(scoreRes) {
   scoreValue.textContent    = scoreRes.score;
   scoreCategory.textContent = scoreRes.category;
@@ -179,7 +179,7 @@ function renderScore(scoreRes) {
   strengthLabel.className      = `strength-label ${scoreRes.cssClass}`;
 }
 
-// ── Stat cards ────────────────────────────────────────────────────────────────
+//  Stat cards 
 function renderStats(strength) {
   statLength.textContent  = strength.length;
   statEntropy.textContent = `${strength.entropy} bits`;
@@ -187,7 +187,7 @@ function renderStats(strength) {
   statVariety.textContent = `${strength.varietyCount}/4 classes`;
 }
 
-// ── Character class indicators ────────────────────────────────────────────────
+//  Character class indicators 
 function renderCharIndicators(strength) {
   setIndicator(indLower,  strength.hasLower);
   setIndicator(indUpper,  strength.hasUpper);
@@ -195,7 +195,7 @@ function renderCharIndicators(strength) {
   setIndicator(indSymbol, strength.hasSymbol);
 }
 
-// ── Issues panel ──────────────────────────────────────────────────────────────
+//  Issues panel 
 function renderIssues(strength, wordlist, patterns, ucheck) {
   const issues = [];
 
@@ -228,7 +228,7 @@ function renderIssues(strength, wordlist, patterns, ucheck) {
   `).join("");
 }
 
-// ── Crack time table ──────────────────────────────────────────────────────────
+//  Crack time table 
 function renderCrackTimes(crackTimes) {
   crackTimeBody.innerHTML = crackTimes.map(ct => `
     <tr>
@@ -241,7 +241,7 @@ function renderCrackTimes(crackTimes) {
   `).join("");
 }
 
-// ── Suggestions ───────────────────────────────────────────────────────────────
+//  Suggestions 
 function renderSuggestions(suggestions) {
   suggestionsList.innerHTML = suggestions.map((s, i) => `
     <div class="suggestion-card suggestion-${s.priority}" style="animation-delay:${i * 60}ms">
@@ -251,7 +251,7 @@ function renderSuggestions(suggestions) {
   `).join("");
 }
 
-// ── Score breakdown bars ──────────────────────────────────────────────────────
+//  Score breakdown bars 
 const BREAKDOWN_MAX = { length: 25, variety: 20, entropy: 20, wordlist: 15, patterns: 10, username: 10 };
 const BREAKDOWN_LABELS = {
   length: "Length", variety: "Variety", entropy: "Entropy",
@@ -274,7 +274,7 @@ function renderBreakdown(breakdown) {
   }).join("");
 }
 
-// ── Generator ─────────────────────────────────────────────────────────────────
+//  Generator 
 function runGenerator() {
   try {
     const pw = generatePassword({
@@ -290,7 +290,7 @@ function runGenerator() {
   }
 }
 
-// ── Personal Attack Analysis helpers ─────────────────────────────────────────
+//  Personal Attack Analysis helpers 
 
 /**
  * Reveal the personal attack section in its initial CTA state.
@@ -337,7 +337,7 @@ function renderPersonalResults(results) {
 
   // Score bar
   paScoreValue.textContent = `${score}/100`;
-  // Colour: red → yellow → green mapped to 0–100
+  // Colour: red  yellow  green mapped to 0100
   const hue = Math.round(score * 1.2); // 0=red(0°), 100=green(120°)
   paScoreFill.style.width      = `${score}%`;
   paScoreFill.style.background = `hsl(${hue},70%,50%)`;
@@ -357,7 +357,7 @@ function renderPersonalResults(results) {
   personalResultsCard.classList.remove('hidden');
 }
 
-// ── Event Listeners ───────────────────────────────────────────────────────────
+//  Event Listeners 
 
 // Password input with debounce
 passwordInput.addEventListener("input", () => {
@@ -405,7 +405,7 @@ document.getElementById("copy-btn").addEventListener("click", () => {
   if (passwordInput.value) copyToClipboard(passwordInput.value, document.getElementById("copy-btn"));
 });
 
-// ── Personal attack event listeners ──────────────────────────────────────────
+//  Personal attack event listeners 
 
 // Show profile form
 showPersonalFormBtn.addEventListener("click", () => {
@@ -420,13 +420,13 @@ showPersonalFormBtn.addEventListener("click", () => {
   }
 });
 
-// Cancel — back to CTA
+// Cancel  back to CTA
 cancelPersonalBtn.addEventListener("click", () => {
   personalFormCard.classList.add("hidden");
   personalCtaCard.classList.remove("hidden");
 });
 
-// Re-run — show the form again
+// Re-run  show the form again
 rerunPersonalBtn.addEventListener("click", () => {
   personalResultsCard.classList.add("hidden");
   personalCtaCard.classList.add("hidden");
@@ -477,7 +477,7 @@ downloadDictBtn.addEventListener("click", () => {
   }
 });
 
-// ── Test cases (run in console with: runTests()) ──────────────────────────────
+//  Test cases (run in console with: runTests()) 
 window.runTests = function() {
   const cases = [
     { pwd: "password",              usr: "",        expectCat: "Weak"       },
@@ -489,7 +489,7 @@ window.runTests = function() {
     { pwd: "Tr0ub4dour&3",         usr: "alice",   expectCat: "Strong"     },
   ];
 
-  console.group("Password Analyzer — Test Suite");
+  console.group("Password Analyzer  Test Suite");
   cases.forEach(({ pwd, usr, expectCat }) => {
     const str  = analyseStrength(pwd);
     const pat  = detectPatterns(pwd);
@@ -498,13 +498,13 @@ window.runTests = function() {
     const sc   = computeScore(str, wl, pat, uc);
     const pass = sc.category === expectCat;
     console[pass ? "log" : "warn"](
-      `${pass ? "✅" : "❌"} "${pwd}" → ${sc.score}/100 ${sc.category} (expected ${expectCat})`
+      `${pass ? "" : ""} "${pwd}"  ${sc.score}/100 ${sc.category} (expected ${expectCat})`
     );
   });
   console.groupEnd();
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+//  Init 
 // Pre-generate a password so the generator panel isn't empty on load
 runGenerator();
 
@@ -513,7 +513,7 @@ window.runPersonalTests = async function() {
   const { generatePersonalDictionary } = await import('../shared/personalDictionaryGenerator.js');
   const { findPasswordInDictionary, computePersonalScore } = await import('../shared/personalDictionaryScorer.js');
 
-  console.group('🎯 Personal Dictionary — Test Suite');
+  console.group(' Personal Dictionary  Test Suite');
 
   const cases = [
     {
@@ -523,13 +523,13 @@ window.runPersonalTests = async function() {
       expectFound: true,
     },
     {
-      label:   'X9#mK2!pL7@qZ (random — should not be found)',
+      label:   'X9#mK2!pL7@qZ (random  should not be found)',
       pwd:     'X9#mK2!pL7@qZ',
       profile: { name: 'Sanskar', dob: '2004-01-01' },
       expectFound: false,
     },
     {
-      label:   'Empty profile — small dictionary',
+      label:   'Empty profile  small dictionary',
       pwd:     'anything',
       profile: {},
       expectFound: false,
@@ -542,7 +542,7 @@ window.runPersonalTests = async function() {
     const score = computePersonalScore(found, rank, dict.length);
     const pass  = found === tc.expectFound;
     console[pass ? 'log' : 'warn'](
-      `${pass ? '✅' : '❌'} ${tc.label}`,
+      `${pass ? '' : ''} ${tc.label}`,
       `| Dict: ${dict.length} | Found: ${found} | Rank: ${rank ?? 'N/A'} | Score: ${score}/100`
     );
   }

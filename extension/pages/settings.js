@@ -1,5 +1,5 @@
 /**
- * settings.js — VaultZero Settings Controller
+ * settings.js  VaultZero Settings Controller
  * Loads, displays, and saves extension settings via chrome.storage.sync
  */
 
@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
 
 const $ = (id) => document.getElementById(id);
 
-// ── Load settings on page open ────────────────────────────────────────────────
+//  Load settings on page open 
 chrome.storage.sync.get('settings', (data) => {
   const s = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
 
@@ -27,12 +27,12 @@ chrome.storage.sync.get('settings', (data) => {
   $('threshold-display').textContent = s.minScoreThreshold;
 });
 
-// ── Live slider display ───────────────────────────────────────────────────────
+//  Live slider display 
 $('setting-threshold').addEventListener('input', () => {
   $('threshold-display').textContent = $('setting-threshold').value;
 });
 
-// ── Save ──────────────────────────────────────────────────────────────────────
+//  Save 
 $('save-btn').addEventListener('click', () => {
   const settings = {
     enableWidget:       $('setting-widget').checked,
