@@ -17,7 +17,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { generatePersonalDictionary } from '../modules/personalDictionaryGenerator.js';
+import { generatePersonalDictionary } from '../../shared/personalDictionaryGenerator.js';
 
 self.onmessage = async function (event) {
   const { type, profile, profileHash = '' } = event.data;

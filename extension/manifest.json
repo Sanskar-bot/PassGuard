@@ -49,7 +49,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "modules/*.js",
+        "../shared/*.js",
         "data/*.js",
         "workers/*.js",
         "assets/*.png",

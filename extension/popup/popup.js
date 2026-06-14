@@ -10,16 +10,16 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { analyseStrength, entropyLabel } from '../modules/strength.js';
-import { detectPatterns }                from '../modules/patterns.js';
-import { checkWordlist }                 from '../modules/wordlist.js';
-import { checkUsername }                 from '../modules/username.js';
-import { estimateCrackTimes }            from '../modules/bruteforce.js';
-import { computeScore, CATEGORIES }      from '../modules/scorer.js';
-import { generateSuggestions }           from '../modules/suggestions.js';
-import { generatePassword }              from '../modules/generator.js';
-import { warmCache, lookup, invalidate, isReady } from '../modules/dictCache.js';
-import { getProfile, getDictMeta, getHistory, addToHistory } from '../modules/profileStore.js';
+import { analyseStrength, entropyLabel } from '../../shared/strength.js';
+import { detectPatterns }                from '../../shared/patterns.js';
+import { checkWordlist }                 from '../../shared/wordlist.js';
+import { checkUsername }                 from '../../shared/username.js';
+import { estimateCrackTimes }            from '../../shared/bruteforce.js';
+import { computeScore, CATEGORIES }      from '../../shared/scorer.js';
+import { generateSuggestions }           from '../../shared/suggestions.js';
+import { generatePassword }              from '../../shared/generator.js';
+import { warmCache, lookup, invalidate, isReady } from '../../shared/dictCache.js';
+import { getProfile, getDictMeta, getHistory, addToHistory } from '../../shared/profileStore.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const RING_R = 50;

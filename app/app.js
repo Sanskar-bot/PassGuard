@@ -14,16 +14,16 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { analyseStrength, entropyLabel }   from "./modules/strength.js";
-import { detectPatterns }                  from "./modules/patterns.js";
-import { checkWordlist }                   from "./modules/wordlist.js";
-import { checkUsername }                   from "./modules/username.js";
-import { estimateCrackTimes }              from "./modules/bruteforce.js";
-import { computeScore, CATEGORIES }        from "./modules/scorer.js";
-import { generateSuggestions }             from "./modules/suggestions.js";
-import { generatePassword }                from "./modules/generator.js";
+import { analyseStrength, entropyLabel }   from "../shared/strength.js";
+import { detectPatterns }                  from "../shared/patterns.js";
+import { checkWordlist }                   from "../shared/wordlist.js";
+import { checkUsername }                   from "../shared/username.js";
+import { estimateCrackTimes }              from "../shared/bruteforce.js";
+import { computeScore, CATEGORIES }        from "../shared/scorer.js";
+import { generateSuggestions }             from "../shared/suggestions.js";
+import { generatePassword }                from "../shared/generator.js";
 import { runPersonalizedAnalysis,
-         downloadDictionary }              from "./modules/personalDictionary.js";
+         downloadDictionary }              from "../shared/personalDictionary.js";
 
 // ── DOM References ────────────────────────────────────────────────────────────
 const passwordInput   = document.getElementById("password-input");
@@ -510,8 +510,8 @@ runGenerator();
 
 // Expose personal test helper to console
 window.runPersonalTests = async function() {
-  const { generatePersonalDictionary } = await import('./modules/personalDictionaryGenerator.js');
-  const { findPasswordInDictionary, computePersonalScore } = await import('./modules/personalDictionaryScorer.js');
+  const { generatePersonalDictionary } = await import('../shared/personalDictionaryGenerator.js');
+  const { findPasswordInDictionary, computePersonalScore } = await import('../shared/personalDictionaryScorer.js');
 
   console.group('🎯 Personal Dictionary — Test Suite');
 

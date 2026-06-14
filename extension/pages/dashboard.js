@@ -14,7 +14,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { getProfile, getDictMeta, getHistory } from '../modules/profileStore.js';
+import { getProfile, getDictMeta, getHistory } from '../../shared/profileStore.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);

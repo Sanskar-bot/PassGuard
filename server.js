@@ -33,9 +33,12 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  // Parse the request URL, defaulting to index.html
+  // Parse the request URL, defaulting to a redirect
   let pathname = url.parse(req.url).pathname;
-  if (pathname === "/") pathname = "/index.html";
+  if (pathname === "/") {
+    res.writeHead(302, { Location: "/app/index.html" });
+    return res.end();
+  }
 
   // Resolve to an absolute path and make sure it stays within ROOT
   const absPath = path.normalize(path.join(ROOT, pathname));

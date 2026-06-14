@@ -16,7 +16,7 @@ import {
   isDictionaryStale,
   exportProfile,
   profileHash,
-} from '../modules/profileStore.js';
+} from '../../shared/profileStore.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
