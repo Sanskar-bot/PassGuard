@@ -17,7 +17,7 @@ import { checkUsername }                 from '../modules/username.js';
 import { estimateCrackTimes }            from '../modules/bruteforce.js';
 import { computeScore, CATEGORIES }      from '../modules/scorer.js';
 import { generateSuggestions }           from '../modules/suggestions.js';
-import { generatePassword }              from '../modules/generator.js';
+import { generateSmartPassword, scoreGeneratedPassword } from '../modules/smartGenerator.js';
 import { warmCache, lookup, invalidate, isReady } from '../modules/dictCache.js';
 import { getProfile, getDictMeta, getHistory, addToHistory } from '../modules/profileStore.js';
 
@@ -87,25 +87,35 @@ const suggList      = $('suggestions-list');
 const personalRiskRow   = $('personal-risk-row');
 const personalRiskBadge = $('personal-risk-badge');
 
-// Generator
-const modeBtns        = document.querySelectorAll('.mode-btn');
-const genOutput       = $('gen-output');
-const genCopyBtn      = $('gen-copy');
-const genUseBtn       = $('gen-use');
-const genLengthSlider = $('gen-length');
-const genLengthDisp   = $('gen-length-display');
-const genLower        = $('gen-lower');
-const genUpper        = $('gen-upper');
-const genDigits       = $('gen-digits');
-const genSymbols      = $('gen-symbols');
-const genBtn          = $('gen-btn');
-const genOptions      = $('gen-options');
-const genAnalysis     = $('gen-analysis');
-const genMiniBar      = $('gen-mini-bar');
-const genMiniLabel    = $('gen-mini-label');
-const genProfileCheck = $('gen-profile-check');
-const genRejectToggle = $('gen-reject-personal');
-const genPersonalBadge = $('gen-personal-badge');
+// ── Smart Generator DOM refs ──────────────────────────────────────────────────
+const sgModeBtns    = document.querySelectorAll('.sg-mode-btn');
+const sgModeHint    = $('sg-mode-hint');
+const sgPwField     = $('sg-pw-field');
+const sgBarWrap     = $('sg-bar-wrap');
+const sgBarFill     = $('sg-bar-fill');
+const sgScoreRow    = $('sg-score-row');
+const sgScoreNum    = $('sg-score-num');
+const sgScoreCat    = $('sg-score-cat');
+const sgScoreEnt    = $('sg-score-ent');
+const sgCrackHint   = $('sg-crack-hint');
+const sgGenBtn      = $('sg-gen-btn');
+const sgRegenBtn    = $('sg-regen-btn');
+const sgCopyBtn     = $('sg-copy-btn');
+const sgUseBtn      = $('sg-use-btn');
+const sgCustomToggle= $('sg-custom-toggle');
+const sgCustomPanel = $('sg-custom-panel');
+const sgCaret       = $('sg-caret');
+const sgWcSlider    = $('sg-wc');
+const sgWcVal       = $('sg-wc-val');
+const sgSepBtns     = document.querySelectorAll('.sg-sep-btn');
+const sgUseNums     = $('sg-use-nums');
+const sgUseSyms     = $('sg-use-syms');
+const sgCapitalize  = $('sg-capitalize');
+const sgTheme       = $('sg-theme');
+const sgOptWc       = $('sg-opt-wc');
+const sgOptSep      = $('sg-opt-sep');
+const sgOptCaps     = $('sg-opt-caps');
+const sgOptTheme    = $('sg-opt-theme');
 
 // Profile tab (Tab 3)
 const ppNoProfile = $('pp-no-profile');
@@ -125,10 +135,19 @@ const ppLastRank  = $('pp-last-rank');
 //  State 
 let passwordVisible = false;
 let debounceTimer   = null;
-let currentMode     = 'secure';
+let sgCurrentMode   = 'smartMemorable';
+let sgSeparator     = '';
+let sgLiveDebounce  = null;
 let profileData     = null;
 let dictMeta        = null;
 let dictCacheReady  = false;
+
+// Mode metadata
+const SG_MODES = {
+  smartMemorable: { hint: 'Title-cased words + number — easy to type, hard to crack', showWc: true,  showSep: true,  showCaps: true,  showTheme: true  },
+  passphrase:     { hint: 'Lowercase words joined by separator — high entropy through length',       showWc: true,  showSep: true,  showCaps: false, showTheme: false },
+  maxSecurity:    { hint: 'Cryptographically random characters — maximum entropy',                   showWc: false, showSep: false, showCaps: false, showTheme: false },
+};
 
 //  Init: load profile + dict meta + warm cache 
 (async function init() {
@@ -141,11 +160,6 @@ let dictCacheReady  = false;
       // Re-run analysis to show personal risk if password already typed
       if (passwordInput.value.length > 0) analyse();
     });
-  }
-
-  // Show profile-aware generator option
-  if (profileData && dictMeta) {
-    genProfileCheck.style.display = '';
   }
 
   // Init popup from current page's password field
@@ -438,81 +452,146 @@ modeBtns.forEach(btn => {
   });
 });
 
-genLengthSlider.addEventListener('input', () => {
-  genLengthDisp.textContent = genLengthSlider.value;
-});
+// ── Smart Generator Controller ────────────────────────────────────────────────
 
-genBtn.addEventListener('click', runGenerator);
-
-function runGenerator() {
-  try {
-    let pw;
-    const rejectPersonal = genRejectToggle?.checked && dictCacheReady && isReady();
-    let attempts = 0;
-
-    do {
-      attempts++;
-      if (currentMode === 'passphrase') {
-        pw = getPassphrase();
-      } else if (currentMode === 'memorable') {
-        pw = generatePassword({ length: 16, lowercase: true, uppercase: true, digits: true, symbols: false });
-      } else {
-        pw = generatePassword({
-          length:    parseInt(genLengthSlider.value, 10),
-          lowercase: genLower.checked,
-          uppercase: genUpper.checked,
-          digits:    genDigits.checked,
-          symbols:   genSymbols.checked,
-        });
-      }
-    } while (rejectPersonal && lookup(pw).found && attempts < 20);
-
-    genOutput.textContent = pw;
-
-    // Quick quality check
-    const str = analyseStrength(pw);
-    const pat = detectPatterns(pw);
-    const wl  = checkWordlist(pw);
-    const uc  = checkUsername(pw, '');
-    const sc  = computeScore(str, wl, pat, uc);
-
-    genMiniBar.style.width      = `${sc.score}%`;
-    genMiniBar.style.background = sc.color;
-    genMiniLabel.textContent    = `${sc.category} (${sc.score}/100)`;
-    genMiniLabel.style.color    = sc.color;
-    genAnalysis.style.display   = '';
-
-    // Profile-aware badge
-    if (rejectPersonal && genPersonalBadge) {
-      const { found } = lookup(pw);
-      genPersonalBadge.textContent  = found ? ' In attack profile' : ' Not in attack profile';
-      genPersonalBadge.style.color  = found ? '#fca5a5' : '#86efac';
-      genPersonalBadge.style.display = '';
-    }
-
-  } catch (e) {
-    genOutput.innerHTML = `<span style="color:var(--accent-red);font-family:var(--font-main);font-size:12px;">${e.message}</span>`;
-  }
+function sgGetOpts() {
+  return {
+    wordCount:  parseInt(sgWcSlider?.value ?? '3', 10),
+    separator:  sgSeparator,
+    useNumbers: sgUseNums?.checked ?? true,
+    useSymbols: sgUseSyms?.checked ?? false,
+    capitalize: sgCapitalize?.checked ?? true,
+    theme:      sgTheme?.value || '',
+  };
 }
 
-genCopyBtn.addEventListener('click', () => {
-  const pw = genOutput.textContent.trim();
-  if (pw && !pw.startsWith('Error') && !pw.startsWith('Select')) {
-    navigator.clipboard.writeText(pw).then(() => flashButton(genCopyBtn, 'Copied'));
+function sgUpdateModeUI(mode) {
+  const meta = SG_MODES[mode] || SG_MODES.smartMemorable;
+  if (sgModeHint)  sgModeHint.textContent = meta.hint;
+  if (sgOptWc)   sgOptWc.style.display   = meta.showWc    ? '' : 'none';
+  if (sgOptSep)  sgOptSep.style.display  = meta.showSep   ? '' : 'none';
+  if (sgOptCaps) sgOptCaps.style.display = meta.showCaps  ? '' : 'none';
+  if (sgOptTheme) sgOptTheme.style.display = meta.showTheme ? '' : 'none';
+}
+
+function sgRenderScore(res) {
+  if (!res) return;
+  sgBarFill.style.width      = `${res.score}%`;
+  sgBarFill.style.background = res.color;
+  sgBarWrap.style.display    = '';
+  sgScoreNum.textContent     = res.score;
+  sgScoreCat.textContent     = res.category;
+  sgScoreCat.style.color     = res.color;
+  sgScoreEnt.textContent     = res.entropy ?? '—';
+  sgScoreRow.style.display   = '';
+  // crack hint
+  try {
+    const times = estimateCrackTimes(res.charsetSize, res.length);
+    const ct    = times.find(t => t.id === 'online_throttled') || times[0];
+    sgCrackHint.textContent  = ct ? `Online login: ${ct.display}` : '';
+    sgCrackHint.style.color  = ct?.severity === 'safe' ? '#22c55e' : ct?.severity === 'moderate' ? '#84cc16' : ct?.severity === 'warning' ? '#f59e0b' : '#ef4444';
+  } catch (_) {}
+  sgRegenBtn.style.display = '';
+  sgCopyBtn.style.display  = '';
+  sgUseBtn.style.display   = '';
+}
+
+function sgGenerate() {
+  sgGenBtn.textContent = 'Generating…';
+  sgGenBtn.disabled    = true;
+  setTimeout(() => {
+    try {
+      const result = generateSmartPassword(sgCurrentMode, sgGetOpts());
+      if (result) {
+        sgPwField.value = result.password;
+        sgRenderScore(result);
+      } else {
+        sgPwField.placeholder = 'Generation failed — try different options';
+      }
+    } catch (e) {
+      console.error('[VaultZero Generator]', e);
+      sgPwField.placeholder = 'Error — check console';
+    } finally {
+      sgGenBtn.textContent = 'Generate';
+      sgGenBtn.disabled    = false;
+    }
+  }, 0);
+}
+
+function sgLiveAnalyse() {
+  const pw = sgPwField.value;
+  if (!pw) {
+    sgBarWrap.style.display  = 'none';
+    sgScoreRow.style.display = 'none';
+    sgCrackHint.textContent  = '';
+    return;
   }
+  const res = scoreGeneratedPassword(pw);
+  sgRenderScore(res);
+}
+
+// Mode tabs
+sgModeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    sgModeBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    sgCurrentMode = btn.dataset.mode;
+    sgUpdateModeUI(sgCurrentMode);
+  });
 });
 
-genUseBtn.addEventListener('click', () => {
-  const pw = genOutput.textContent.trim();
-  if (pw && !pw.startsWith('Error')) {
-    passwordInput.value = pw;
-    tabBtns.forEach(b => b.classList.remove('active'));
-    tabPanels.forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-tab="analyze"]').classList.add('active');
-    $('panel-analyze').classList.add('active');
-    analyse();
-  }
+// Generate / Regen
+sgGenBtn.addEventListener('click',   sgGenerate);
+sgRegenBtn.addEventListener('click', sgGenerate);
+
+// Copy
+sgCopyBtn.addEventListener('click', () => {
+  const pw = sgPwField.value;
+  if (!pw) return;
+  navigator.clipboard.writeText(pw).then(() => flashButton(sgCopyBtn, 'Copied!'));
 });
+
+// Use in Analyzer
+sgUseBtn.addEventListener('click', () => {
+  const pw = sgPwField.value;
+  if (!pw) return;
+  passwordInput.value = pw;
+  tabBtns.forEach(b => b.classList.remove('active'));
+  tabPanels.forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="analyze"]').classList.add('active');
+  $('panel-analyze').classList.add('active');
+  analyse();
+});
+
+// Live analysis while editing
+sgPwField.addEventListener('input', () => {
+  clearTimeout(sgLiveDebounce);
+  sgLiveDebounce = setTimeout(sgLiveAnalyse, 80);
+});
+
+// Customise toggle
+sgCustomToggle.addEventListener('click', () => {
+  const isOpen = !sgCustomPanel.hidden;
+  sgCustomPanel.hidden = isOpen;
+  sgCustomToggle.setAttribute('aria-expanded', String(!isOpen));
+  sgCaret.innerHTML = isOpen ? '&#9660;' : '&#9650;';
+});
+
+// Word count slider
+sgWcSlider.addEventListener('input', () => { sgWcVal.textContent = sgWcSlider.value; });
+
+// Separator buttons
+sgSepBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    sgSepBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sgSeparator = btn.dataset.sep;
+  });
+});
+
+// Init mode UI
+sgUpdateModeUI(sgCurrentMode);
 
 //  Profile Tab (Tab 3) 
 
@@ -595,5 +674,5 @@ function flashButton(btn, tempText) {
 }
 
 //  Init 
-runGenerator();
+sgGenerate();
 

@@ -183,63 +183,130 @@
 </div><!-- /panel-analyze -->
 
 <!-- 
-     TAB 2  GENERATE
+     TAB 2 — GENERATE
  -->
 <div class="tab-panel" id="panel-generate">
+  <div class="sg-wrap">
 
-  <div class="gen-section">
-    <div class="gen-modes">
-      <button class="mode-btn active" data-mode="secure"     id="mode-secure">Maximum Security</button>
-      <button class="mode-btn"        data-mode="memorable"  id="mode-memorable">Memorable</button>
-      <button class="mode-btn"        data-mode="passphrase" id="mode-passphrase">Passphrase</button>
+    <!-- Mode tabs -->
+    <div class="sg-modes" role="tablist" aria-label="Generator mode">
+      <button class="sg-mode-btn active" data-mode="smartMemorable"  id="sg-mode-memorable"   role="tab" aria-selected="true">Memorable</button>
+      <button class="sg-mode-btn"        data-mode="passphrase"      id="sg-mode-passphrase"  role="tab" aria-selected="false">Passphrase</button>
+      <button class="sg-mode-btn"        data-mode="maxSecurity"     id="sg-mode-max"         role="tab" aria-selected="false">Max Security</button>
+    </div>
+    <div class="sg-mode-hint" id="sg-mode-hint">Title-cased words + number — easy to type, hard to crack</div>
+
+    <!-- Editable password output -->
+    <div class="sg-output-card">
+      <label class="sg-output-label" for="sg-pw-field">Generated Password</label>
+      <input
+        type="text"
+        id="sg-pw-field"
+        class="sg-pw-field"
+        placeholder="Click Generate…"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-label="Generated password — edit to customise"
+      />
+      <!-- Live strength bar -->
+      <div class="sg-bar-wrap" id="sg-bar-wrap" style="display:none">
+        <div class="sg-bar-fill" id="sg-bar-fill"></div>
+      </div>
+      <!-- Mini score row -->
+      <div class="sg-score-row" id="sg-score-row" style="display:none">
+        <span class="sg-score-num" id="sg-score-num">0</span>
+        <span class="sg-score-sep">/100</span>
+        <span class="sg-score-cat" id="sg-score-cat"></span>
+        <span class="sg-score-sep">·</span>
+        <span class="sg-score-ent" id="sg-score-ent"></span>
+        <span class="sg-score-sep"> bits</span>
+      </div>
+      <div class="sg-crack-hint" id="sg-crack-hint"></div>
     </div>
 
-    <!-- Generated output -->
-    <div class="gen-output-wrap">
-      <div class="gen-output" id="gen-output">
-        <span class="gen-placeholder">Click Generate to create a password</span>
-      </div>
-      <div class="gen-output-actions">
-        <button class="gen-action-btn" id="gen-copy">Copy</button>
-        <button class="gen-action-btn" id="gen-use">Use in Analyzer</button>
-      </div>
+    <!-- Actions -->
+    <div class="sg-actions">
+      <button class="sg-btn-primary" id="sg-gen-btn">Generate</button>
+      <button class="sg-btn-secondary" id="sg-regen-btn" style="display:none">Regenerate</button>
+      <button class="sg-btn-secondary" id="sg-copy-btn"  style="display:none">Copy</button>
+      <button class="sg-btn-use" id="sg-use-btn" style="display:none">Use in Analyzer</button>
     </div>
 
-    <!-- Options -->
-    <div class="gen-options" id="gen-options">
-      <div class="option-row">
-        <label class="option-label">Length: <span id="gen-length-display">16</span></label>
-        <input type="range" id="gen-length" min="8" max="64" value="16" class="range-input" />
-      </div>
-      <div class="checkbox-row">
-        <label class="checkbox-label"><input type="checkbox" id="gen-lower" checked /> Lowercase</label>
-        <label class="checkbox-label"><input type="checkbox" id="gen-upper" checked /> Uppercase</label>
-        <label class="checkbox-label"><input type="checkbox" id="gen-digits" checked /> Digits</label>
-        <label class="checkbox-label"><input type="checkbox" id="gen-symbols" checked /> Symbols</label>
-      </div>
-    </div>
+    <!-- Customise (collapsible) -->
+    <div class="sg-custom-section">
+      <button class="sg-custom-toggle" id="sg-custom-toggle" aria-expanded="false">
+        Customise <span id="sg-caret">&#9660;</span>
+      </button>
+      <div class="sg-custom-panel" id="sg-custom-panel" hidden>
 
-    <button class="gen-btn" id="gen-btn">Generate Password</button>
+        <!-- Word count (hidden for Max Security) -->
+        <div class="sg-opt-row" id="sg-opt-wc">
+          <span class="sg-opt-label">Words</span>
+          <div class="sg-opt-right">
+            <input type="range" id="sg-wc" min="2" max="5" value="3" class="sg-range" />
+            <span class="sg-range-val" id="sg-wc-val">3</span>
+          </div>
+        </div>
 
-    <!-- Profile-aware validation -->
-    <div class="gen-profile-check" id="gen-profile-check" style="display:none">
-      <label class="gen-check-label">
-        <input type="checkbox" id="gen-reject-personal" checked />
-        Reject passwords matching my attack profile
-      </label>
-      <div class="gen-check-badge" id="gen-personal-badge" style="display:none"></div>
-    </div>
+        <!-- Separator (hidden for Max Security) -->
+        <div class="sg-opt-row" id="sg-opt-sep">
+          <span class="sg-opt-label">Separator</span>
+          <div class="sg-sep-btns" role="group">
+            <button class="sg-sep-btn active" data-sep="">None</button>
+            <button class="sg-sep-btn" data-sep="-">-</button>
+            <button class="sg-sep-btn" data-sep="_">_</button>
+            <button class="sg-sep-btn" data-sep=".">.</button>
+          </div>
+        </div>
 
-    <!-- Mini analyzer for generated password -->
-    <div class="gen-analysis" id="gen-analysis" style="display:none">
-      <div class="gen-analysis-header">Generated password quality</div>
-      <div class="gen-mini-bar-track">
-        <div class="gen-mini-bar-fill" id="gen-mini-bar"></div>
-      </div>
-      <span class="gen-mini-label" id="gen-mini-label"></span>
-    </div>
+        <!-- Numbers -->
+        <div class="sg-opt-row">
+          <span class="sg-opt-label">Numbers</span>
+          <label class="sg-toggle">
+            <input type="checkbox" id="sg-use-nums" checked />
+            <span class="sg-toggle-track"></span>
+          </label>
+        </div>
+
+        <!-- Symbols -->
+        <div class="sg-opt-row">
+          <span class="sg-opt-label">Symbol</span>
+          <label class="sg-toggle">
+            <input type="checkbox" id="sg-use-syms" />
+            <span class="sg-toggle-track"></span>
+          </label>
+        </div>
+
+        <!-- Capitalize (Memorable only) -->
+        <div class="sg-opt-row" id="sg-opt-caps">
+          <span class="sg-opt-label">Capitalize</span>
+          <label class="sg-toggle">
+            <input type="checkbox" id="sg-capitalize" checked />
+            <span class="sg-toggle-track"></span>
+          </label>
+        </div>
+
+        <!-- Theme (Memorable only) -->
+        <div class="sg-opt-row" id="sg-opt-theme">
+          <span class="sg-opt-label">Theme</span>
+          <select id="sg-theme" class="sg-select">
+            <option value="">Any</option>
+            <option value="tech">Technology</option>
+            <option value="space">Space</option>
+            <option value="nature">Nature</option>
+            <option value="animals">Animals</option>
+            <option value="science">Science</option>
+            <option value="fantasy">Fantasy</option>
+          </select>
+        </div>
+
+      </div><!-- /sg-custom-panel -->
+    </div><!-- /sg-custom-section -->
+
   </div>
 </div><!-- /panel-generate -->
+
 
 <!-- 
      TAB 3  PROFILE SUMMARY

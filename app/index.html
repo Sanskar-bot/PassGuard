@@ -9,7 +9,7 @@
   <!-- Favicon (inline SVG as data URI) -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'></text></svg>" />
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
 
@@ -346,14 +346,19 @@
       <span class="sg-privacy-badge">Local Only</span>
     </div>
 
-    <!-- Mode tabs -->
-    <div class="sg-mode-tabs" role="tablist" aria-label="Generator mode">
-      <button class="sg-tab active" id="tab-memorable" role="tab" data-mode="smartMemorable"
-              aria-selected="true">Memorable</button>
-      <button class="sg-tab" id="tab-passphrase" role="tab" data-mode="passphrase"
-              aria-selected="false">Passphrase</button>
-      <button class="sg-tab" id="tab-max" role="tab" data-mode="maxSecurity"
-              aria-selected="false">Max Security</button>
+    <!-- Mode tabs + profile pill -->
+    <div class="sg-tabs-row">
+      <div class="sg-mode-tabs" role="tablist" aria-label="Generator mode">
+        <button class="sg-tab active" id="tab-memorable" role="tab" data-mode="smartMemorable"
+                aria-selected="true">Memorable</button>
+        <button class="sg-tab" id="tab-passphrase" role="tab" data-mode="passphrase"
+                aria-selected="false">Passphrase</button>
+        <button class="sg-tab" id="tab-max" role="tab" data-mode="maxSecurity"
+                aria-selected="false">Max Security</button>
+        <button class="sg-tab sg-tab--personal" id="tab-personal" role="tab" data-mode="personalSecure"
+                aria-selected="false">Personalized</button>
+      </div>
+      <span id="sg-profile-pill" class="sg-profile-pill" hidden>No profile</span>
     </div>
 
     <!-- Mode descriptions -->
@@ -425,7 +430,80 @@
         </button>
       </div>
 
+      <!-- Warning badge (shown live when user edits to expose personal data) -->
+      <div id="sg-warning-badge" class="sg-warning-badge" hidden></div>
+
+      <!-- Explainability panel (Personalized mode) -->
+      <div id="sg-explain-panel" class="sg-explain-panel" hidden>
+        <div class="sg-explain-title">Password Analysis</div>
+        <div class="sg-explain-grid">
+          <div class="sg-explain-row">
+            <span class="sg-explain-label">Strength Score</span>
+            <span class="sg-explain-value" id="sg-explain-strength">—</span>
+          </div>
+          <div class="sg-explain-row">
+            <span class="sg-explain-label">Personal Attack Score</span>
+            <span class="sg-explain-value" id="sg-explain-personal">—</span>
+          </div>
+        </div>
+        <div class="sg-explain-reason" id="sg-explain-reason">—</div>
+      </div>
+
     </div><!-- /sg-main-card -->
+
+    <!-- Personalized profile form (collapsed, shown only in Personal mode) -->
+    <div id="sg-personal-form" class="sg-personal-form" hidden>
+      <div class="sg-pf-header">
+        <span class="sg-pf-title">Your Profile</span>
+        <span class="sg-pf-hint">Stored locally. Used as memory anchors only — never embedded directly.</span>
+      </div>
+      <div class="sg-pf-grid">
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-first-name">First Name</label>
+          <input type="text" id="sgp-first-name" class="sg-pf-input" placeholder="e.g. Sanskar" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-last-name">Last Name</label>
+          <input type="text" id="sgp-last-name" class="sg-pf-input" placeholder="e.g. Phougat" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-nickname">Nickname</label>
+          <input type="text" id="sgp-nickname" class="sg-pf-input" placeholder="e.g. San" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-pet">Pet Name</label>
+          <input type="text" id="sgp-pet" class="sg-pf-input" placeholder="e.g. Bruno" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-partner">Partner Name</label>
+          <input type="text" id="sgp-partner" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-company">Company / School</label>
+          <input type="text" id="sgp-company" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-dob">Date of Birth</label>
+          <input type="date" id="sgp-dob" class="sg-pf-input" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-fav-num">Favourite Number</label>
+          <input type="text" id="sgp-fav-num" class="sg-pf-input" placeholder="e.g. 7" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field sg-pf-field--wide">
+          <label class="sg-pf-label" for="sgp-keywords">Custom Keywords <span class="sg-pf-hint-inline">(comma-separated)</span></label>
+          <input type="text" id="sgp-keywords" class="sg-pf-input" placeholder="e.g. cricket, physics" autocomplete="off" />
+        </div>
+      </div>
+      <div class="sg-pf-actions">
+        <button class="sg-pf-save-btn" id="sgp-save-btn">Save Profile</button>
+        <button class="sg-pf-clear-btn" id="sgp-clear-btn">Clear</button>
+      </div>
+      <div class="sg-pf-privacy">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Profile saved in your browser only. Never transmitted anywhere.
+      </div>
+    </div><!-- /sg-personal-form -->
 
     <!-- Customisation panel (collapsible) -->
     <div class="sg-custom-wrap">
