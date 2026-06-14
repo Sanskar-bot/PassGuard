@@ -227,10 +227,12 @@ function renderScore(res) {
 
 // ── Explainability panel ───────────────────────────────────────────────────
 
-function renderExplanation(scoreRes, personalRes, usedCategories) {
+function renderExplanation(scoreRes, personalRes, usedCategories, directAnchors) {
   if (!explainPanel) return;
   const { strengthLine, personalLine, reason } =
-    explainPassword(pwInput.value, currentProfile, scoreRes, personalRes, usedCategories || []);
+    explainPassword(pwInput.value, currentProfile, scoreRes, personalRes,
+                    usedCategories || [], directAnchors || []);
+
 
   explainStrength.textContent = strengthLine;
   explainPersonal.textContent = personalLine;
@@ -281,10 +283,10 @@ async function generate() {
           // Run full personal analysis for the explain panel (async, non-blocking UX)
           if (isProfileFilled(currentProfile)) {
             runPersonalizedAnalysis(result.password, currentProfile)
-              .then(personalRes => renderExplanation(result, personalRes, result.categories))
-              .catch(() => renderExplanation(result, null, result.categories || []));
+              .then(personalRes => renderExplanation(result, personalRes, result.categories, result.directAnchors))
+              .catch(() => renderExplanation(result, null, result.categories || [], result.directAnchors || []));
           } else {
-            renderExplanation(result, null, result.categories || []);
+            renderExplanation(result, null, result.categories || [], result.directAnchors || []);
           }
         } else {
           pwInput.value       = '';

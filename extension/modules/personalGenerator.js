@@ -5,24 +5,26 @@
  *
  * Core philosophy
  * ───────────────
- *  Personal data is used only as INSPIRATION, never as a direct component.
- *  The engine derives themed "memory anchors" from profile fields, then
- *  combines those anchors with curated words from the word bank to produce
- *  passwords that feel personal and memorable, but resist targeted attacks.
+ *  Personal data is used as INSPIRATION — memorable anchor words come directly
+ *  from your profile (pet name, nickname, company name, custom keywords), while
+ *  the rest of the password uses themed word-bank words.
  *
  * What is NEVER placed directly in a generated password
  * ───────────────────────────────────────────────────────
- *  • The user's first name or surname (on their own, or + predictable suffix)
- *  • The user's birth year (full YYYY)
- *  • Name + birth year combinations
- *  • Pet name + predictable number (Bruno123)
+ *  • The user's first name or surname (they are the most predictable targets)
+ *  • The user's birth year (full YYYY or 2-digit YY)
+ *  • Name + birth year combinations (Sanskar2004 → rejected)
+ *  • Any anchor word + predictable suffix only (Bruno123 → rejected)
  *  • Any pattern found in the personal attack dictionary
  *
- * What IS allowed
- * ───────────────
- *  • Pet name as ONE word among 2+ others (BrunoQuantumFalcon88  ✓)
- *  • Themed words derived from the user's data (pet "Bruno" → animals category)
- *  • A 2-digit number suffix that is NOT the birth year
+ * What IS used
+ * ─────────────
+ *  • Pet name as a direct anchor word (Bruno → "Bruno" in password)
+ *  • Nickname as a direct anchor word (sansu → "Sansu" in password)
+ *  • Company first word as anchor (jaypee → "Jaypee" in password)
+ *  • Custom keywords as direct anchors
+ *  • Themed word-bank words based on which profile fields are filled
+ *  • A safe 2-digit number suffix (never the birth year)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -64,31 +66,80 @@ function shuffle(arr) {
 // ── Anchor derivation ──────────────────────────────────────────────────────
 
 /**
- * Map profile fields to themed word categories and optionally include
- * the raw pet name (if it reads like a real word and is 3-10 chars).
+ * Derive both DIRECT anchor words (personal words that appear in the password)
+ * and themed word categories (broader pool) from a user profile.
  *
- * Returns { anchorWords: string[], categories: string[] }
+ * Direct anchors (personal words placed directly):
+ *   • Pet name        — Bruno, Buddy, Luna …
+ *   • Nickname        — Sansu, Sanu, Jay …
+ *   • Company name    — first word only (Jaypee, Google, Apple …)
+ *   • Custom keywords — each keyword title-cased
+ *
+ * Themed categories (word-bank words):
+ *   • Derived from ALL profile fields (name length, DOB, company type, etc.)
+ *
+ * @returns {{ directAnchors: string[], anchorWords: string[], categories: string[] }}
  */
 function deriveAnchors(profile = {}) {
-  const categories = new Set(['general']);
-  const extraWords = [];   // raw words we allow (e.g. pet name itself)
+  const categories   = new Set(['general']);
+  const directAnchors = [];   // words placed directly into the password
 
-  // Pet name  → direct anchor word allowed (e.g. Bruno) + animals category
-  const pet = (profile.pet || '').trim();
-  if (pet.length >= 3 && pet.length <= 10 && /^[a-zA-Z]+$/.test(pet)) {
-    extraWords.push(pet.charAt(0).toUpperCase() + pet.slice(1).toLowerCase());
-    categories.add('animals');
+  /** Add a word as a direct anchor if it looks like a real English-style word */
+  function addDirect(raw) {
+    if (!raw) return;
+    const w = raw.trim();
+    // Must be 3–12 chars, letters only, not obviously a common English word
+    // (short common words like 'the', 'and' are excluded)
+    if (w.length >= 3 && w.length <= 12 && /^[a-zA-Z]+$/.test(w)) {
+      directAnchors.push(w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    }
   }
 
-  // First name  → determines category by length (NOT the name itself)
+  // ── Direct anchor sources ──────────────────────────────────────────────
+
+  // Pet name → direct anchor + animals category
+  const pet = (profile.pet || '').trim();
+  if (pet) { addDirect(pet); categories.add('animals'); }
+
+  // Nickname → direct anchor + nature category
+  const nick = (profile.nick || '').trim();
+  if (nick) { addDirect(nick); categories.add('nature'); }
+
+  // Company → first word only as direct anchor + tech category
+  const company = (profile.company || '').trim();
+  if (company) {
+    const firstWord = company.split(/[\s\-_.,]+/)[0];
+    addDirect(firstWord);
+    categories.add('tech');
+  }
+
+  // Custom keywords → each keyword as direct anchor
+  const keywords = Array.isArray(profile.customKeywords)
+    ? profile.customKeywords.filter(k => k && String(k).trim().length >= 2)
+    : [];
+  for (const kw of keywords) {
+    const k = String(kw).trim();
+    addDirect(k);
+    // Category hint from first letter
+    const c = k[0]?.toLowerCase() || '';
+    if ('abcde'.includes(c))       categories.add('animals');
+    else if ('fghij'.includes(c))  categories.add('tech');
+    else if ('klmno'.includes(c))  categories.add('nature');
+    else if ('pqrst'.includes(c))  categories.add('space');
+    else                            categories.add('science');
+  }
+
+  // ── Category-only sources (no direct word, just expand the themed pool) ──
+
+  // First name → category by length (name itself never used)
   const name = (profile.name || '').trim();
   if (name.length > 0) {
-    if (name.length <= 4) categories.add('general');
+    if (name.length <= 4)      categories.add('general');
     else if (name.length <= 6) categories.add('science');
-    else categories.add('space');
+    else                        categories.add('space');
   }
 
-  // Last name  → fantasy or tech by first letter
+  // Last name → category by first letter
   const surname = (profile.surname || '').trim();
   if (surname.length > 0) {
     const c = surname[0].toLowerCase();
@@ -98,61 +149,43 @@ function deriveAnchors(profile = {}) {
     else                              categories.add('space');
   }
 
-  // DOB  → space/nature (era themed — NOT the year itself)
+  // DOB → space + nature (era-themed, never the year itself)
   if (profile.dob) {
     categories.add('space');
     categories.add('nature');
   }
 
-  // Company  → tech category
-  if ((profile.company || '').trim()) categories.add('tech');
-
-  // Partner  → fantasy category
+  // Partner → fantasy
   if ((profile.partner || '').trim()) categories.add('fantasy');
 
-  // Nickname / alias → nature category
-  if ((profile.nick || '').trim() || (profile.commonAlias || '').trim()) {
-    categories.add('nature');
-  }
-
-  // Favorite number → science (number → precision → science)
+  // Favourite number → science
   if ((profile.favoriteNumber || '').trim()) categories.add('science');
 
-  // Sports team → animals (action/power animals)
+  // Sports team → animals
   if ((profile.sportsTeam || '').trim()) categories.add('animals');
 
-  // Gamer tag  → tech + fantasy
+  // Gamer tag → tech + fantasy
   if ((profile.gamerTag || '').trim()) {
     categories.add('tech');
     categories.add('fantasy');
   }
 
-  // Custom keywords → derive category from first letter of each keyword
-  const keywords = Array.isArray(profile.customKeywords)
-    ? profile.customKeywords.filter(k => k && String(k).trim().length >= 2)
-    : [];
-  if (keywords.length > 0) {
-    keywords.forEach(kw => {
-      const c = String(kw).trim()[0]?.toLowerCase() || '';
-      if ('abcde'.includes(c))       categories.add('animals');
-      else if ('fghij'.includes(c))  categories.add('tech');
-      else if ('klmno'.includes(c))  categories.add('nature');
-      else if ('pqrst'.includes(c))  categories.add('space');
-      else                            categories.add('science');
-    });
-  }
-
-  // Build word pool from all derived categories
+  // Build themed word pool from all derived categories
   const pool = [];
   for (const cat of categories) {
     if (WORD_BANK[cat]) pool.push(...WORD_BANK[cat]);
   }
 
-  // Merge extra raw words (pet name) and de-duplicate
-  const allWords = [...new Set([...extraWords, ...pool])];
+  // anchorWords = directAnchors first, then themed pool (de-duplicated)
+  const allWords = [...new Set([...directAnchors, ...pool])];
 
-  return { anchorWords: allWords, categories: [...categories], hasPetAnchor: extraWords.length > 0 };
+  return {
+    directAnchors: [...new Set(directAnchors)], // unique direct anchor words
+    anchorWords:   allWords,
+    categories:    [...categories],
+  };
 }
+
 
 // ── Number suffix (NOT the birth year) ────────────────────────────────────
 
@@ -184,12 +217,14 @@ function safeNumber(profile = {}) {
 
 /**
  * Generate one candidate Personalized Secure password.
- * Structure: [anchor?][word1][word2][number]
- * - If a pet name is available, sometimes place it first
- * - Remaining slots filled from themed word pool
- * - Always ends in a safe 2-digit number
+ *
+ * Structure: 1 direct-anchor word + (wordCount-1) themed words + number suffix
+ *
+ * The direct anchor is picked from: pet, nickname, company name, keywords.
+ * If no direct anchors exist (empty profile), falls back to pure themed words.
+ * Themed words fill the remaining slots from the category-based anchor pool.
  */
-function genOnePersonal(anchorWords, hasPetAnchor, profile, opts = {}) {
+function genOnePersonal(directAnchors, anchorWords, profile, opts = {}) {
   const count   = Math.max(2, Math.min(4, opts.wordCount ?? 3));
   const sep     = opts.separator ?? '';
   const useSym  = opts.symbols ?? false;
@@ -197,26 +232,31 @@ function genOnePersonal(anchorWords, hasPetAnchor, profile, opts = {}) {
 
   const words = [];
 
-  // Pet name anchor appears in roughly half of generated passwords
-  if (hasPetAnchor && rand(2) === 0) {
-    const petWord = anchorWords[0]; // pet word is always first if present
+  // ── Step 1: Always include 1 direct anchor word when available ────────────
+  if (directAnchors.length > 0) {
+    // Pick one direct anchor (pet/nick/company/keyword)
+    const anchor = pick(directAnchors);
     words.push(doCapit
-      ? petWord.charAt(0).toUpperCase() + petWord.slice(1).toLowerCase()
-      : petWord
+      ? anchor.charAt(0).toUpperCase() + anchor.slice(1).toLowerCase()
+      : anchor.toLowerCase()
     );
   }
 
-  // Fill remaining slots from the anchor pool (excluding already-picked pet)
-  const pool = hasPetAnchor ? anchorWords.slice(1) : anchorWords;
+  // ── Step 2: Fill remaining slots from the themed word pool ─────────────────
+  // Exclude direct anchors from the pool so we don't repeat them
+  const directSet = new Set(directAnchors.map(w => w.toLowerCase()));
+  const pool = anchorWords.filter(w => !directSet.has(w.toLowerCase()));
+  const fallback = pool.length > 0 ? pool : ALL_WORDS;
+
   while (words.length < count) {
-    const w = pick(pool.length > 0 ? pool : ALL_WORDS);
+    const w = pick(fallback);
     words.push(doCapit
       ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
       : w.toLowerCase()
     );
   }
 
-  // Shuffle so pet name doesn't always appear first among all words
+  // ── Step 3: Shuffle so anchor word isn't always first ─────────────────────
   shuffle(words);
 
   let pw = words.join(sep);
@@ -225,6 +265,7 @@ function genOnePersonal(anchorWords, hasPetAnchor, profile, opts = {}) {
 
   return pw;
 }
+
 
 // ── Vulnerability checker ──────────────────────────────────────────────────
 
@@ -330,31 +371,31 @@ function scorePassword(pw) {
  *             personalScore, explanation, categories, hasPetAnchor } | null}
  */
 export function generatePersonalPassword(profile = {}, opts = {}) {
-  const { anchorWords, categories, hasPetAnchor } = deriveAnchors(profile);
+  const { directAnchors, anchorWords, categories } = deriveAnchors(profile);
   const dictionary = opts.dictionary ?? null;
 
   let best      = null;
   let bestScore = -1;
 
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
-    const pw       = genOnePersonal(anchorWords, hasPetAnchor, profile, opts);
+    const pw       = genOnePersonal(directAnchors, anchorWords, profile, opts);
     const scoreRes = scorePassword(pw);
-    const { vulnerable, reason } = checkVulnerability(pw, profile, dictionary);
+    const { vulnerable } = checkVulnerability(pw, profile, dictionary);
 
-    if (vulnerable) continue; // skip — too guessable
+    if (vulnerable) continue;
 
     if (scoreRes.score > bestScore) {
       const strength = analyseStrength(pw);
       best = {
-        password:    pw,
-        score:       scoreRes.score,
-        category:    scoreRes.category,
-        color:       scoreRes.color,
-        entropy:     strength.entropy,
-        length:      strength.length,
-        charsetSize: strength.charsetSize,
+        password:     pw,
+        score:        scoreRes.score,
+        category:     scoreRes.category,
+        color:        scoreRes.color,
+        entropy:      strength.entropy,
+        length:       strength.length,
+        charsetSize:  strength.charsetSize,
         categories,
-        hasPetAnchor,
+        directAnchors,
       };
       bestScore = scoreRes.score;
     }
@@ -378,37 +419,41 @@ export function generatePersonalPassword(profile = {}, opts = {}) {
  *
  * @returns {{ strengthLine: string, personalLine: string, reason: string }}
  */
-export function explainPassword(pw, profile, scoreRes, personalRes, usedCategories = []) {
-  const strengthLine = `${scoreRes.score ?? '—'}/100 — ${scoreRes.category ?? ''}`;
+export function explainPassword(pw, profile, scoreRes, personalRes, usedCategories = [], directAnchors = []) {
+  const strengthLine = `${scoreRes.score ?? '\u2014'}/100 \u2014 ${scoreRes.category ?? ''}`;
 
-  let personalLine = '—';
+  let personalLine = '\u2014';
   if (personalRes) {
-    personalLine = `${personalRes.score}/100 — ${personalRes.riskLevel?.label ?? ''}`;
+    personalLine = `${personalRes.score}/100 \u2014 ${personalRes.riskLevel?.label ?? ''}`;
   }
 
-  // Build reason sentence from what was used
+  // Build reason from what was actually used
   const parts = [];
-  const hasPet   = (profile.pet     || '').trim().length > 0;
-  const hasName  = (profile.name    || '').trim().length > 0;
-  const hasDOB   = (profile.dob     || '').trim().length > 0;
-  const hasComp  = (profile.company || '').trim().length > 0;
+  const hasPet  = (profile.pet     || '').trim().length > 0;
+  const hasNick = (profile.nick    || '').trim().length > 0;
+  const hasComp = (profile.company || '').trim().length > 0;
+  const hasKw   = Array.isArray(profile.customKeywords) && profile.customKeywords.some(k => k?.trim());
+  const hasDOB  = (profile.dob     || '').trim().length > 0;
 
-  if (hasPet) parts.push('pet name as memory anchor');
-  if (hasName && !hasPet) parts.push('name-derived themed words');
-  if (hasDOB) parts.push('era-themed vocabulary (not the birth year)');
-  if (hasComp) parts.push('tech-domain vocabulary');
+  if (directAnchors.length > 0) {
+    const anchorList = directAnchors.slice(0, 3).join(', ');
+    parts.push(`personal memory anchors (${anchorList})`);
+  } else {
+    if (hasPet)  parts.push('pet name as memory anchor');
+    if (hasNick) parts.push('nickname anchor');
+    if (hasComp) parts.push('company name anchor');
+    if (hasKw)   parts.push('custom keyword anchors');
+  }
+  if (hasDOB) parts.push('era-themed vocabulary (not the birth year itself)');
 
-  const themeNames = usedCategories.filter(c => c !== 'general')
+  const themeNames = usedCategories
+    .filter(c => c !== 'general')
     .map(c => c.charAt(0).toUpperCase() + c.slice(1));
 
   let reason = '';
-  if (parts.length > 0) {
-    reason = `Uses ${parts.join(' and ')} to create memorable associations. `;
-  }
-  if (themeNames.length > 0) {
-    reason += `Word themes drawn from: ${themeNames.join(', ')}. `;
-  }
-  reason += 'Raw personal data (name, birth year) is never placed directly in the password.';
+  if (parts.length > 0) reason = `Uses ${parts.join(' and ')} as memorable associations. `;
+  if (themeNames.length > 0) reason += `Word themes: ${themeNames.join(', ')}. `;
+  reason += 'Your raw name and birth year are never placed directly in the password.';
 
   return { strengthLine, personalLine, reason };
 }
