@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Analyze your password's strength with entropy calculation, pattern detection, wordlist checks, username similarity, and brute-force time estimation. Fully offline." />
+  <title>Password Analyzer — PassGuard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <link rel="stylesheet" href="style.css?v=5" />
+  <style>
+    /* ── Analyzer page overrides ───────────────────────────────
+       These rules update style.css's neon palette to use
+       the platform.css design tokens, keeping all JS class
+       hooks intact while removing glow effects.
+    ────────────────────────────────────────────────────────── */
+
+    /* Page wrapper — keep existing but update bg */
+    .page-wrapper {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      padding-top: var(--nav-h);
+    }
+
+    /* Header hidden — replaced by pg-page-header */
+    .site-header { display: none; }
+
+    /* Input section */
+    .input-section {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--sp-6);
+      padding-top: var(--sp-8);
+    }
+
+    /* Glass cards — update to platform tokens */
+    .glass-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      /* Remove backdrop-filter: blur */
+      backdrop-filter: none;
+    }
+
+    /* Input label */
+    .input-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--sp-2);
+    }
+
+    /* Password input */
+    .password-field, .text-field {
+      background: var(--bg-base);
+      border-color: var(--border-medium);
+      color: var(--text-primary);
+      font-family: var(--font);
+    }
+    .password-field:focus, .text-field:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+      outline: none;
+    }
+
+    /* Icon buttons */
+    .icon-btn {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      transition: color var(--dur), background var(--dur), border-color var(--dur);
+    }
+    .icon-btn:hover { color: var(--text-primary); background: var(--bg-overlay); }
+
+    /* Strength bar */
+    .strength-bar-track { background: var(--bg-raised); border-radius: 2px; }
+    .strength-label { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+
+    /* Char indicators */
+    .char-ind {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all var(--dur);
+    }
+    .char-ind.active {
+      background: var(--success-subtle);
+      border-color: var(--success-border);
+      color: var(--success);
+      box-shadow: none; /* remove glow */
+    }
+    .char-ind.inactive { opacity: 0.5; }
+    .ind-icon { margin-right: 4px; opacity: 0.9; }
+
+    /* Results grid */
+    .results-grid {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--sp-6);
+    }
+
+    /* Score ring */
+    #score-ring-bg   { fill: none; stroke: var(--bg-raised); stroke-width: 8; }
+    #score-ring-fill {
+      fill: none; stroke-width: 8;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.5s ease, stroke 0.4s;
+    }
+    .score-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #score-value  { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .score-max    { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+
+    /* Score category */
+    .score-category { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-align: center; margin-top: var(--sp-2); }
+
+    /* Section title */
+    .section-title {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: var(--sp-3);
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* Breakdown bars */
+    .breakdown-bar { margin-bottom: 8px; }
+    .breakdown-label { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 0.8125rem; color: var(--text-secondary); }
+    .breakdown-track { height: 4px; background: var(--bg-raised); border-radius: 2px; }
+    .breakdown-fill  { height: 100%; border-radius: 2px; transition: width 0.4s ease, background 0.3s; }
+
+    /* Stat cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: var(--sp-3); margin-bottom: var(--sp-5); }
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-4);
+      text-align: center;
+    }
+    .stat-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 1.25rem; font-weight: 800; color: var(--brand-hover); font-variant-numeric: tabular-nums; }
+
+    /* Issues panel */
+    .issues-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4) var(--sp-5);
+      margin-bottom: var(--sp-4);
+    }
+    .issues-header {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: var(--sp-3);
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .issues-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .issue-item  {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px; font-size: 0.8125rem; font-weight: 600;
+      border: 1px solid transparent; cursor: default;
+    }
+    .issue-item::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .issue-critical { background: var(--danger-subtle);  border-color: var(--danger-border);  color: #fca5a5; }
+    .issue-critical::before { background: var(--danger); }
+    .issue-warning  { background: var(--warning-subtle); border-color: var(--warning-border); color: #fcd34d; }
+    .issue-warning::before  { background: var(--warning); }
+    .issue-info     { background: var(--info-subtle);    border-color: var(--info-border);    color: #93c5fd; }
+    .issue-info::before     { background: var(--info); }
+
+    /* Crack time table */
+    .crack-table { font-size: 0.875rem; }
+    .crack-table th { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding-bottom: var(--sp-2); }
+    .crack-table td { color: var(--text-secondary); padding: 5px 0; border-bottom: 1px solid var(--border-subtle); }
+    .crack-table tr:last-child td { border-bottom: none; }
+    .crack-time-val { font-weight: 700; font-family: var(--font-mono); }
+    .crack-danger   { color: var(--danger); }
+    .crack-warning  { color: var(--warning); }
+    .crack-moderate { color: #84cc16; }
+    .crack-safe     { color: var(--success); }
+
+    /* Suggestions */
+    .suggestions-list { display: flex; flex-direction: column; gap: 6px; }
+    .suggestion-item {
+      display: flex; align-items: flex-start; gap: var(--sp-3);
+      padding: var(--sp-3) var(--sp-4);
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;
+    }
+    .suggestion-item::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--brand); flex-shrink: 0; margin-top: 6px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: var(--sp-16);
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+    .empty-icon { display: none; } /* remove neon icon, keep text */
+
+    /* Personal attack section */
+    .personal-attack-section { max-width: var(--content-max); margin-inline: auto; padding-inline: var(--sp-6); margin-top: var(--sp-6); }
+    .section-heading { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-4); letter-spacing: -0.01em; }
+    .personal-cta-card { padding: var(--sp-5); }
+    .personal-cta-inner { display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap; }
+    .personal-cta-icon { display: none; } /* remove emoji icon */
+    .personal-cta-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-1); }
+    .personal-cta-desc  { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+    .personal-cta-text  { flex: 1; }
+    .btn-personal-run   { background: var(--bg-raised); border: 1px solid var(--border-medium); color: var(--text-primary); border-radius: var(--radius); padding: 9px 16px; font-size: 0.875rem; font-weight: 600; white-space: nowrap; transition: background var(--dur), border-color var(--dur); }
+    .btn-personal-run:hover { background: var(--bg-overlay); border-color: rgba(255,255,255,0.18); }
+
+    /* Personal form */
+    .personal-form-card { padding: var(--sp-6); }
+    .personal-form-header { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+    .personal-form-icon { display: none; }
+    .personal-form-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .personal-form-subtitle { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
+    .personal-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: var(--sp-4); }
+    .personal-field-group { display: flex; flex-direction: column; gap: 4px; }
+    .personal-field-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); }
+    .personal-field-input {
+      width: 100%; padding: 8px 10px;
+      background: var(--bg-base); border: 1px solid var(--border-medium);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 0.875rem; font-family: var(--font); outline: none;
+      transition: border-color var(--dur);
+    }
+    .personal-field-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .personal-field-date { color-scheme: dark; }
+    .personal-form-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); }
+    .personal-generate-btn { background: var(--brand); color: #fff; border: none; border-radius: var(--radius); padding: 9px 18px; font-size: 0.875rem; font-weight: 600; }
+    .personal-generate-btn:hover { background: var(--brand-hover); }
+    .btn-secondary { background: var(--bg-raised); border: 1px solid var(--border-medium); color: var(--text-primary); border-radius: var(--radius); padding: 9px 16px; font-size: 0.875rem; font-weight: 600; }
+    .btn-secondary:hover { background: var(--bg-overlay); }
+
+    /* Personal loading */
+    .personal-loading-card { padding: var(--sp-8); }
+    .personal-loading-inner { display: flex; align-items: center; gap: var(--sp-4); }
+    .personal-spinner { width: 24px; height: 24px; border: 3px solid var(--border-medium); border-top-color: var(--brand); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .personal-loading-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .personal-loading-sub   { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Personal results */
+    .personal-results-card { padding: var(--sp-5); }
+    .personal-stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--sp-3); margin-bottom: var(--sp-5); }
+    .personal-stat-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--sp-4); text-align: center; }
+    .personal-stat-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+    .personal-stat-value { font-size: 1.375rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .personal-stat-sub   { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .personal-score-section { margin-bottom: var(--sp-4); }
+    .personal-score-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--sp-2); }
+    .personal-score-label  { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
+    .personal-score-value  { font-size: 0.9375rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .personal-score-track  { height: 6px; background: var(--bg-raised); border-radius: 3px; overflow: hidden; }
+    .personal-score-fill   { height: 100%; border-radius: 3px; transition: width 0.5s ease, background 0.3s; }
+    .personal-risk-row   { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) 0; border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--sp-4); }
+    .personal-risk-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
+    .personal-risk-badge { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+    .personal-explanation-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--sp-3); }
+    .personal-explanation-list  { display: flex; flex-direction: column; gap: 5px; }
+    .personal-explanation-list li { font-size: 0.875rem; color: var(--text-secondary); padding: var(--sp-2) var(--sp-3); background: var(--bg-raised); border-radius: var(--radius-sm); display: flex; align-items: flex-start; gap: var(--sp-2); }
+    .personal-results-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
+    .btn-download-dict { background: var(--brand-subtle); border: 1px solid var(--brand-border); color: var(--brand-hover); border-radius: var(--radius); padding: 8px 14px; font-size: 0.8125rem; font-weight: 600; transition: background var(--dur); }
+    .btn-download-dict:hover { background: rgba(37,99,235,0.2); }
+    .personal-rerun-btn { font-size: 0.8125rem; }
+
+    /* Risk badge colors */
+    .risk-critical { background: var(--danger-subtle);  border-color: var(--danger-border);  color: var(--danger); }
+    .risk-high     { background: var(--danger-subtle);  border-color: var(--danger-border);  color: #fca5a5; }
+    .risk-medium   { background: var(--warning-subtle); border-color: var(--warning-border); color: var(--warning); }
+    .risk-low      { background: var(--warning-subtle); border-color: var(--warning-border); color: #fcd34d; }
+    .risk-none     { background: var(--success-subtle); border-color: var(--success-border); color: var(--success); }
+
+    /* Site footer */
+    .site-footer { max-width: var(--content-max); margin-inline: auto; padding-inline: var(--sp-6); padding-block: var(--sp-8); border-top: 1px solid var(--border-subtle); margin-top: var(--sp-10); font-size: 0.8125rem; color: var(--text-muted); }
+    .site-footer code { font-size: 0.8125rem; }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* Layout: 2-col on desktop */
+    .az-layout {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--sp-6);
+      padding-top: var(--sp-6);
+    }
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .personal-stats-row { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<!-- nav injected by nav.js -->
+
+<div class="page-wrapper">
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <div class="az-layout">
+    <div class="pg-page-header">
+      <div class="pg-page-header__eyebrow">Tool</div>
+      <div class="pg-page-header__title">Password Analyzer</div>
+      <div class="pg-page-header__desc">
+        Multi-layer analysis: entropy, patterns, wordlist matching, username similarity, and brute-force crack time estimation. All computed locally.
+      </div>
+      <div class="pg-page-header__meta">
+        <span class="pg-badge pg-badge--success">Fully Offline</span>
+        <span class="pg-badge pg-badge--neutral">No Data Sent</span>
+        <a href="/app/attack-lab.html" class="pg-badge pg-badge--brand" style="text-decoration:none">Run Personalized Attack &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Input section ───────────────────────────────────────── -->
+  <section class="input-section" aria-label="Password input">
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);">
+
+      <!-- Password card -->
+      <div class="glass-card" style="padding:var(--sp-5)">
+        <label class="input-label" for="password-input">Password to Analyze</label>
+        <div class="input-row">
+          <input
+            type="password"
+            id="password-input"
+            class="password-field"
+            placeholder="Type or paste your password"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <button class="icon-btn" id="toggle-visibility" aria-label="Toggle password visibility">Show</button>
+          <button class="icon-btn" id="copy-btn" aria-label="Copy password">Copy</button>
+        </div>
+
+        <div class="strength-bar-track" role="progressbar" aria-label="Password strength" style="margin-top:10px">
+          <div id="strength-bar"></div>
+        </div>
+        <div class="strength-label-row" style="margin-top:4px">
+          <span id="strength-label" class="strength-label"></span>
+        </div>
+
+        <!-- Char class indicators -->
+        <div class="char-indicators" aria-label="Character class checklist" style="margin-top:var(--sp-3)">
+          <div class="char-ind inactive" id="ind-lower"><span class="ind-icon">a</span>Lowercase</div>
+          <div class="char-ind inactive" id="ind-upper"><span class="ind-icon">A</span>Uppercase</div>
+          <div class="char-ind inactive" id="ind-digit"><span class="ind-icon">1</span>Numbers</div>
+          <div class="char-ind inactive" id="ind-symbol"><span class="ind-icon">#</span>Symbols</div>
+        </div>
+      </div>
+
+      <!-- Username card -->
+      <div class="glass-card" style="padding:var(--sp-5)">
+        <label class="input-label" for="username-input">Username <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+        <div class="input-row">
+          <input
+            type="text"
+            id="username-input"
+            class="text-field"
+            placeholder="Checks similarity between username and password"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <p style="margin-top:var(--sp-3);font-size:0.8125rem;color:var(--text-muted);line-height:1.5">
+          If provided, the analyzer checks whether your password is derived from or similar to your username — a common weak-password pattern.
+        </p>
+        <div style="margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid var(--border-subtle)">
+          <a href="/app/attack-lab.html" class="pg-btn pg-btn--ghost pg-btn--sm">
+            Run Personalized Attack &rsaquo;
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ── Empty state ─────────────────────────────────────────── -->
+  <div id="empty-state" class="az-layout" aria-live="polite">
+    <div class="empty-state" style="padding:var(--sp-16);text-align:center;color:var(--text-muted)">
+      <div class="empty-icon"></div>
+      <p style="font-size:0.9375rem">Enter a password above to see your full security report.</p>
+    </div>
+  </div>
+
+  <!-- ── Results ─────────────────────────────────────────────── -->
+  <section id="results-panel" class="hidden az-layout" aria-live="polite" aria-label="Analysis results">
+
+    <!-- Row 1: Score ring + Breakdown -->
+    <div class="results-grid" style="padding:0;max-width:none">
+      <div>
+        <!-- Score card -->
+        <div class="glass-card score-card" style="padding:var(--sp-6)">
+          <div class="score-ring-wrap" role="img" aria-label="Password score ring">
+            <svg width="160" height="160" viewBox="0 0 120 120">
+              <circle id="score-ring-bg"   cx="60" cy="60" r="54" />
+              <circle id="score-ring-fill" cx="60" cy="60" r="54" />
+            </svg>
+            <div class="score-center">
+              <span id="score-value" aria-label="Score">0</span>
+              <span class="score-max">/100</span>
+            </div>
+          </div>
+          <div id="score-category" class="score-category"></div>
+
+          <div class="section-title" style="margin-top:var(--sp-5)">Score Breakdown</div>
+          <div id="breakdown-bars"></div>
+        </div>
+      </div>
+
+      <!-- Right: stats, issues, crack time, suggestions -->
+      <div>
+        <!-- Stat cards -->
+        <div class="stats-grid" aria-label="Password statistics">
+          <div class="stat-card">
+            <div class="stat-label">Length</div>
+            <div class="stat-value" id="stat-length"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Entropy</div>
+            <div class="stat-value" id="stat-entropy"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Charset</div>
+            <div class="stat-value" id="stat-charset"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Variety</div>
+            <div class="stat-value" id="stat-variety"></div>
+          </div>
+        </div>
+
+        <!-- Issues -->
+        <div id="issues-panel" class="issues-panel hidden" role="alert" aria-label="Security issues">
+          <div class="issues-header">Issues Found</div>
+          <ul id="issues-list" class="issues-list"></ul>
+        </div>
+
+        <!-- Crack times -->
+        <div class="glass-card" style="padding:var(--sp-5); margin-bottom:var(--sp-4)">
+          <div class="section-title">Estimated Crack Time</div>
+          <table class="crack-table" aria-label="Brute-force crack time estimates">
+            <thead>
+              <tr>
+                <th>Attack Scenario</th>
+                <th style="text-align:right">Est. Time</th>
+              </tr>
+            </thead>
+            <tbody id="crack-time-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="glass-card" style="padding:var(--sp-5)">
+          <div class="section-title">Recommendations</div>
+          <div id="suggestions-list" class="suggestions-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Personalized Attack section ───────────────────────────
+       All IDs preserved so app.js continues to work.
+       Visually redesigned but functionally identical.
+  ─────────────────────────────────────────────────────────── -->
+  <section id="personal-attack-section" class="hidden personal-attack-section" aria-label="Personalized attack analysis">
+
+    <h2 class="section-heading">Personalized Attack Analysis</h2>
+
+    <!-- CTA card -->
+    <div id="personal-cta-card" class="glass-card personal-cta-card">
+      <div class="personal-cta-inner">
+        <div class="personal-cta-icon" aria-hidden="true"></div>
+        <div class="personal-cta-text">
+          <div class="personal-cta-title">Simulate a Targeted Attack</div>
+          <p class="personal-cta-desc">
+            Test your password against a personalized dictionary generated from information someone
+            who knows you might use — names, birthdays, pets, and more.
+            All fields are optional. Nothing is sent anywhere.
+          </p>
+        </div>
+        <button id="show-personal-form-btn" class="btn-personal-run" aria-label="Run advanced personalized analysis">
+          Run Advanced Analysis
+        </button>
+        <a href="/app/attack-lab.html" class="pg-btn pg-btn--ghost pg-btn--sm">Full Attack Lab &rsaquo;</a>
+      </div>
+    </div>
+
+    <!-- Profile form -->
+    <div id="personal-form-card" class="glass-card hidden personal-form-card">
+      <div class="personal-form-header">
+        <span class="personal-form-icon" aria-hidden="true"></span>
+        <div>
+          <div class="personal-form-title">Personal Information</div>
+          <div class="personal-form-subtitle">All fields are optional — fill in what you know.</div>
+        </div>
+      </div>
+
+      <div class="personal-form-grid">
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-first-name">First Name</label>
+          <input type="text" id="pa-first-name" class="personal-field-input" placeholder="e.g. Sanskar" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-last-name">Last Name</label>
+          <input type="text" id="pa-last-name" class="personal-field-input" placeholder="e.g. Phougat" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-nickname">Nickname</label>
+          <input type="text" id="pa-nickname" class="personal-field-input" placeholder="e.g. Sandy" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-username">Username</label>
+          <input type="text" id="pa-username" class="personal-field-input" placeholder="e.g. sanskar_01" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-dob">Date of Birth</label>
+          <input type="date" id="pa-dob" class="personal-field-input personal-field-date" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-partner">Partner's Name</label>
+          <input type="text" id="pa-partner" class="personal-field-input" placeholder="e.g. Priya" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-pet">Pet's Name</label>
+          <input type="text" id="pa-pet" class="personal-field-input" placeholder="e.g. Bruno" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="personal-field-group">
+          <label class="personal-field-label" for="pa-company">Company Name</label>
+          <input type="text" id="pa-company" class="personal-field-input" placeholder="e.g. TechCorp" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="personal-form-actions">
+        <button id="run-personal-analysis-btn" class="btn-primary personal-generate-btn" aria-label="Generate dictionary and analyse">
+          Generate &amp; Analyze
+        </button>
+        <button id="cancel-personal-btn" class="btn-secondary" aria-label="Cancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="personal-loading-card" class="glass-card hidden personal-loading-card" aria-live="polite">
+      <div class="personal-loading-inner">
+        <div class="personal-spinner"></div>
+        <div class="personal-loading-text">
+          <div class="personal-loading-title">Generating personalized dictionary</div>
+          <div class="personal-loading-sub">Analyzing name combinations, dates, and patterns</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="personal-results-card" class="glass-card hidden personal-results-card" aria-live="polite">
+
+      <div class="personal-stats-row">
+        <div class="personal-stat-card">
+          <div class="personal-stat-label">Dictionary Size</div>
+          <div class="personal-stat-value" id="pa-dict-size"></div>
+          <div class="personal-stat-sub">passwords generated</div>
+        </div>
+        <div class="personal-stat-card" id="pa-found-card">
+          <div class="personal-stat-label">Password Found</div>
+          <div class="personal-stat-value" id="pa-found"></div>
+          <div class="personal-stat-sub" id="pa-found-sub">in dictionary</div>
+        </div>
+        <div class="personal-stat-card" id="pa-rank-card">
+          <div class="personal-stat-label">Attack Rank</div>
+          <div class="personal-stat-value" id="pa-rank"></div>
+          <div class="personal-stat-sub">guess number</div>
+        </div>
+      </div>
+
+      <div class="personal-score-section">
+        <div class="personal-score-header">
+          <span class="personal-score-label">Personalized Attack Resistance</span>
+          <span class="personal-score-value" id="pa-score-value"></span>
+        </div>
+        <div class="personal-score-track" role="progressbar" aria-label="Personal attack resistance score">
+          <div class="personal-score-fill" id="pa-score-fill"></div>
+        </div>
+      </div>
+
+      <div class="personal-risk-row">
+        <span class="personal-risk-label">Risk Level</span>
+        <span class="personal-risk-badge" id="pa-risk-badge"></span>
+      </div>
+
+      <div class="personal-explanation" id="pa-explanation">
+        <div class="personal-explanation-title">Analysis Details</div>
+        <ul class="personal-explanation-list" id="pa-explanation-list"></ul>
+      </div>
+
+      <div class="personal-results-actions">
+        <button id="download-dict-btn" class="btn-download-dict" aria-label="Download personalized dictionary">
+          Download Dictionary
+        </button>
+        <button id="rerun-personal-btn" class="btn-secondary personal-rerun-btn" aria-label="Edit profile and re-run">
+          Edit &amp; Re-run
+        </button>
+        <a href="/app/attack-lab.html" class="pg-btn pg-btn--ghost pg-btn--sm">Open Full Attack Lab &rsaquo;</a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <footer class="site-footer" aria-label="Page footer">
+    <p>
+      PassGuard runs entirely in your browser — your password is <strong>never sent anywhere</strong>.
+      Open the console and run <code>runTests()</code> to see built-in test cases.
+    </p>
+  </footer>
+
+  <!-- Hidden legacy generator stubs — app.js queries these -->
+  <input type="hidden" id="gen-length"        value="20" />
+  <input type="hidden" id="gen-lower"         />
+  <input type="hidden" id="gen-upper"         />
+  <input type="hidden" id="gen-digits"        />
+  <input type="hidden" id="gen-symbols"       />
+  <textarea id="gen-output"         style="display:none" readonly></textarea>
+  <button   id="gen-btn"            style="display:none"></button>
+  <button   id="gen-copy-btn"       style="display:none"></button>
+  <button   id="gen-use-btn"        style="display:none"></button>
+  <span     id="gen-length-display" style="display:none"></span>
+
+</div><!-- /page-wrapper -->
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+</script>
+<script type="module" src="app.js"></script>
+
+</body>
+</html>

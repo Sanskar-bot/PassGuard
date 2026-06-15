@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Manage your security profile — store personal information used as memory anchors for the Password Generator and Personalized Attack Lab." />
+  <title>Security Profile — PassGuard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <style>
+    .pf-wrap { max-width: 720px; margin-inline: auto; padding-inline: var(--sp-6); padding-top: var(--sp-8); padding-bottom: var(--sp-20); }
+
+    .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-5); }
+    .pf-field { display: flex; flex-direction: column; gap: 4px; }
+    .pf-field--wide { grid-column: 1 / -1; }
+
+    .pf-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }
+
+    /* Health bar */
+    .pf-health { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+    .pf-health-bar-wrap { flex: 1; }
+    .pf-health-pct { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; min-width: 48px; }
+    .pf-health-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Stats */
+    .pf-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+
+    /* Uses list */
+    .pf-use-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+    .pf-use-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .pf-use-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .pf-use-title { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+    .pf-use-desc  { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+
+    /* Toast */
+    .pf-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--bg-surface); border: 1px solid var(--border-medium);
+      border-radius: var(--radius-md); padding: 10px 20px;
+      font-size: 0.875rem; font-weight: 600; color: var(--text-primary);
+      box-shadow: var(--shadow-lg); z-index: 9999;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .pf-toast.show { opacity: 1; }
+
+    @media (max-width: 480px) {
+      .pf-stats { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="pf-wrap pg-page pg-page--flush" style="padding-top: calc(var(--nav-h) + var(--sp-8));">
+
+  <!-- Page header -->
+  <div class="pg-page-header">
+    <div class="pg-page-header__eyebrow">Settings</div>
+    <div class="pg-page-header__title">Security Profile</div>
+    <div class="pg-page-header__desc">
+      Your personal memory anchors. Used by the Generator and Attack Lab to produce personalized results.
+      Stored entirely in your browser — never transmitted anywhere.
+    </div>
+    <div class="pg-page-header__meta">
+      <span class="pg-badge pg-badge--success">Local Storage Only</span>
+      <span class="pg-badge pg-badge--neutral">Never Transmitted</span>
+    </div>
+  </div>
+
+  <!-- Profile health card -->
+  <div class="pg-card pg-mb-6" id="pf-health-card">
+    <div class="pg-section-title">Profile Completeness</div>
+    <div class="pf-health">
+      <div class="pf-health-pct" id="pf-health-pct">0%</div>
+      <div class="pf-health-bar-wrap">
+        <div class="pg-bar-track pg-bar-track--lg">
+          <div class="pg-bar-fill" id="pf-health-fill" style="width:0%;background:var(--warning)"></div>
+        </div>
+        <div class="pf-health-label" id="pf-health-label">No fields filled — enter your profile below</div>
+      </div>
+    </div>
+    <div class="pf-stats">
+      <div class="pg-stat">
+        <div class="pg-stat__value" id="pf-stat-fields">0/10</div>
+        <div class="pg-stat__label">Fields Filled</div>
+      </div>
+      <div class="pg-stat">
+        <div class="pg-stat__value" id="pf-stat-dict-est">—</div>
+        <div class="pg-stat__label">Est. Dict Size</div>
+      </div>
+      <div class="pg-stat">
+        <div class="pg-stat__value" id="pf-stat-strength">None</div>
+        <div class="pg-stat__label">Profile Strength</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile form -->
+  <div class="pg-card pg-mb-6">
+    <div class="pg-section-title">Profile Information</div>
+    <p class="pg-body-sm pg-mb-5">
+      These are memory anchors — information attackers commonly use when targeting someone they know.
+      The more fields you fill, the more accurate your personalized analysis will be.
+    </p>
+
+    <div class="pf-grid" id="pf-form">
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-first-name">First Name</label>
+        <input type="text" id="pf-first-name" class="pg-input" placeholder="e.g. Sanskar" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-last-name">Last Name</label>
+        <input type="text" id="pf-last-name" class="pg-input" placeholder="e.g. Phougat" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-nickname">Nickname</label>
+        <input type="text" id="pf-nickname" class="pg-input" placeholder="e.g. Sandy" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-username">Username</label>
+        <input type="text" id="pf-username" class="pg-input" placeholder="e.g. sanskar_01" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-dob">Date of Birth</label>
+        <input type="date" id="pf-dob" class="pg-input" style="color-scheme:dark" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-partner">Partner's Name</label>
+        <input type="text" id="pf-partner" class="pg-input" placeholder="e.g. Priya" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-pet">Pet's Name</label>
+        <input type="text" id="pf-pet" class="pg-input" placeholder="e.g. Bruno" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-company">Company / School</label>
+        <input type="text" id="pf-company" class="pg-input" placeholder="e.g. TechCorp" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field">
+        <label class="pg-label-text" for="pf-fav-num">Favourite Number</label>
+        <input type="text" id="pf-fav-num" class="pg-input" placeholder="e.g. 7" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="pf-field pf-field--wide">
+        <label class="pg-label-text" for="pf-keywords">Keywords <span style="color:var(--text-muted);font-weight:400">(comma-separated)</span></label>
+        <input type="text" id="pf-keywords" class="pg-input" placeholder="e.g. cricket, physics, guitar" autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+
+    <div class="pf-actions">
+      <button class="pg-btn pg-btn--primary" id="pf-save-btn">Save Profile</button>
+      <button class="pg-btn pg-btn--secondary" id="pf-export-btn">Export JSON</button>
+      <button class="pg-btn pg-btn--ghost" id="pf-clear-btn">Clear Profile</button>
+    </div>
+
+    <div style="margin-top:var(--sp-4); display:flex; align-items:center; gap:6px; font-size:0.8125rem; color:var(--text-muted)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Saved to <code>localStorage</code> in your browser. Never sent anywhere.
+    </div>
+  </div>
+
+  <!-- How it's used -->
+  <div class="pg-card">
+    <div class="pg-section-title">How your profile is used</div>
+    <div class="pf-use-list">
+      <div class="pf-use-item">
+        <div class="pf-use-icon" style="background:var(--brand-subtle);border:1px solid var(--brand-border);color:var(--brand-hover)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+        </div>
+        <div>
+          <div class="pf-use-title">Password Generator — Personalized Mode</div>
+          <div class="pf-use-desc">Creates passwords that avoid your personal information as obvious patterns, while optionally using your data as subtle structural seeds.</div>
+        </div>
+      </div>
+      <div class="pf-use-item">
+        <div class="pf-use-icon" style="background:var(--danger-subtle);border:1px solid var(--danger-border);color:var(--danger)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div class="pf-use-title">Personalized Attack Lab</div>
+          <div class="pf-use-desc">Generates a targeted attack dictionary from your profile and tests whether your password would be discovered by someone who knows you.</div>
+        </div>
+      </div>
+      <div class="pf-use-item">
+        <div class="pf-use-icon" style="background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div>
+          <div class="pf-use-title">Password Analyzer — Personalized Score</div>
+          <div class="pf-use-desc">Adds a personalized resistance score to the standard strength analysis when a profile is saved.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="pf-toast" id="pf-toast">Profile saved</div>
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+
+  const FIELDS = [
+    'pf-first-name','pf-last-name','pf-nickname','pf-username',
+    'pf-dob','pf-partner','pf-pet','pf-company','pf-fav-num','pf-keywords'
+  ];
+  const STORAGE_KEY = 'pg_profile_v1';
+
+  const $ = id => document.getElementById(id);
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function saveProfile(obj) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  }
+
+  function updateHealth(obj) {
+    const filled = FIELDS.filter(f => {
+      const key = f.replace('pf-','').replace(/-([a-z])/g, (_,c) => c.toUpperCase());
+      const val = obj[key] || obj[f.replace('pf-','')] || '';
+      return String(val).trim().length > 0;
+    }).length;
+    const pct = Math.round(filled / FIELDS.length * 100);
+    $('pf-health-pct').textContent = pct + '%';
+    $('pf-health-fill').style.width = pct + '%';
+    $('pf-health-fill').style.background = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
+    $('pf-health-label').textContent = pct === 0 ? 'No fields filled — enter your profile below' :
+      pct < 40 ? 'Minimal profile — more fields = better analysis' :
+      pct < 70 ? 'Good profile — covers common attack vectors' :
+      'Comprehensive profile — full personalized analysis enabled';
+    $('pf-stat-fields').textContent = `${filled}/${FIELDS.length}`;
+    const dictEst = filled === 0 ? 0 : filled <= 2 ? '~500' : filled <= 5 ? '~5,000' : '~20,000+';
+    $('pf-stat-dict-est').textContent = dictEst;
+    $('pf-stat-strength').textContent = pct === 0 ? 'None' : pct < 40 ? 'Minimal' : pct < 70 ? 'Moderate' : 'Comprehensive';
+  }
+
+  function populateForm(obj) {
+    const keyMap = {
+      'pf-first-name': 'firstName',  'pf-last-name': 'lastName',
+      'pf-nickname':   'nickname',   'pf-username':  'username',
+      'pf-dob':        'dob',        'pf-partner':   'partner',
+      'pf-pet':        'pet',        'pf-company':   'company',
+      'pf-fav-num':    'favNumber',  'pf-keywords':  'keywords'
+    };
+    for (const [id, key] of Object.entries(keyMap)) {
+      if ($(id) && obj[key]) $(id).value = obj[key];
+    }
+  }
+
+  function readForm() {
+    return {
+      firstName: $('pf-first-name').value.trim(),
+      lastName:  $('pf-last-name').value.trim(),
+      nickname:  $('pf-nickname').value.trim(),
+      username:  $('pf-username').value.trim(),
+      dob:       $('pf-dob').value,
+      partner:   $('pf-partner').value.trim(),
+      pet:       $('pf-pet').value.trim(),
+      company:   $('pf-company').value.trim(),
+      favNumber: $('pf-fav-num').value.trim(),
+      keywords:  $('pf-keywords').value.trim(),
+    };
+  }
+
+  function showToast(msg) {
+    const t = $('pf-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // Init
+  const profile = loadProfile();
+  populateForm(profile);
+  updateHealth(profile);
+
+  // Live update
+  FIELDS.forEach(id => {
+    $(id).addEventListener('input', () => updateHealth(readForm()));
+  });
+
+  // Save
+  $('pf-save-btn').addEventListener('click', () => {
+    const obj = readForm();
+    saveProfile(obj);
+    updateHealth(obj);
+    showToast('Profile saved to browser storage');
+  });
+
+  // Export
+  $('pf-export-btn').addEventListener('click', () => {
+    const obj = readForm();
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'passguard-profile.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Clear
+  $('pf-clear-btn').addEventListener('click', () => {
+    if (!confirm('Clear your entire profile? This cannot be undone.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    FIELDS.forEach(id => { if ($(id)) $(id).value = ''; });
+    updateHealth({});
+    showToast('Profile cleared');
+  });
+</script>
+
+</body>
+</html>

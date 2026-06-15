@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Personalized Attack Lab — generate a custom attack dictionary from your personal information and test your password's resistance to targeted attacks." />
+  <title>Personalized Attack Lab — PassGuard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <link rel="stylesheet" href="style.css?v=5" />
+  <style>
+    .page-wrapper { background: var(--bg-base); color: var(--text-primary); padding-top: var(--nav-h); }
+    .site-header, .sg-section, #smart-generator, .site-footer { display: none; }
+    .al-wrap { max-width: 860px; margin-inline: auto; padding-inline: var(--sp-6); }
+
+    /* Warning banner */
+    .al-flag {
+      background: var(--danger-subtle);
+      border: 1px solid var(--danger-border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-4);
+      display: flex; align-items: center; gap: var(--sp-3);
+      font-size: 0.8125rem; color: #fca5a5; font-weight: 600;
+      margin-bottom: var(--sp-6);
+    }
+
+    /* Form grid */
+    .al-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: var(--sp-4); margin-bottom: var(--sp-5); }
+    .al-field { display: flex; flex-direction: column; gap: 4px; }
+    .al-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); }
+    .al-hint  { font-size: 0.75rem; color: var(--text-muted); }
+    .al-input {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-base); border: 1px solid var(--border-medium);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 0.875rem; font-family: var(--font); outline: none;
+      transition: border-color var(--dur);
+    }
+    .al-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .al-input[type="date"] { color-scheme: dark; }
+
+    /* Password test row */
+    .al-pw-row { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-5); }
+    .al-pw-input { flex: 1; }
+    .al-pw-toggle {
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      color: var(--text-secondary); border-radius: var(--radius); padding: 8px 12px;
+      font-size: 0.8125rem; font-weight: 600; font-family: var(--font); cursor: pointer;
+      white-space: nowrap; transition: background var(--dur);
+    }
+    .al-pw-toggle:hover { background: var(--bg-overlay); color: var(--text-primary); }
+
+    /* Actions */
+    .al-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+    .al-btn-run {
+      background: var(--danger); color: #fff; border: none;
+      border-radius: var(--radius); padding: 10px 20px;
+      font-size: 0.9375rem; font-weight: 600; font-family: var(--font); cursor: pointer;
+      transition: background var(--dur);
+    }
+    .al-btn-run:hover { background: #dc2626; }
+    .al-btn-clear {
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      color: var(--text-secondary); border-radius: var(--radius); padding: 10px 16px;
+      font-size: 0.875rem; font-weight: 600; font-family: var(--font); cursor: pointer;
+      transition: background var(--dur);
+    }
+    .al-btn-clear:hover { background: var(--bg-overlay); color: var(--text-primary); }
+
+    /* Loading */
+    .al-spinner { width: 24px; height: 24px; border: 3px solid var(--border-medium); border-top-color: var(--danger); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    .al-stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--sp-3); margin-bottom: var(--sp-6); }
+    .al-stat { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--sp-4); text-align: center; }
+    .al-stat__val   { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .al-stat__label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 4px; }
+    .al-stat__sub   { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .al-stat--danger  { border-color: var(--danger-border); }
+    .al-stat--danger .al-stat__val { color: var(--danger); }
+    .al-stat--success { border-color: var(--success-border); }
+    .al-stat--success .al-stat__val { color: var(--success); }
+
+    /* Score bar */
+    .al-score-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--sp-2); font-size: 0.875rem; }
+    .al-score-label  { font-weight: 600; color: var(--text-secondary); }
+    .al-score-value  { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .al-score-track  { height: 6px; background: var(--bg-raised); border-radius: 3px; overflow: hidden; margin-bottom: var(--sp-4); }
+    .al-score-fill   { height: 100%; border-radius: 3px; transition: width 0.5s ease, background 0.3s; }
+
+    /* Risk badge */
+    .al-risk-row   { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) 0; border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--sp-5); }
+    .al-risk-label { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+    .al-risk-badge { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; border: 1px solid; }
+    .al-risk--critical { background: var(--danger-subtle); border-color: var(--danger-border); color: var(--danger); }
+    .al-risk--high     { background: var(--danger-subtle); border-color: var(--danger-border); color: #fca5a5; }
+    .al-risk--medium   { background: var(--warning-subtle); border-color: var(--warning-border); color: var(--warning); }
+    .al-risk--low      { background: var(--warning-subtle); border-color: var(--warning-border); color: #fcd34d; }
+    .al-risk--none     { background: var(--success-subtle); border-color: var(--success-border); color: var(--success); }
+
+    /* Attack flow diagram */
+    .al-flow { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; padding: var(--sp-4); background: var(--bg-raised); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: var(--sp-6); }
+    .al-flow-node { flex-shrink: 0; padding: var(--sp-2) var(--sp-3); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-align: center; }
+    .al-flow-arrow { flex-shrink: 0; color: var(--text-muted); font-size: 1rem; }
+    .al-flow-node--match { border-color: var(--danger-border); background: var(--danger-subtle); color: #fca5a5; }
+    .al-flow-node--safe  { border-color: var(--success-border); background: var(--success-subtle); color: var(--success); }
+
+    /* Explanation list */
+    .al-explanation-list { display: flex; flex-direction: column; gap: 5px; }
+    .al-explanation-list li {
+      font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;
+      padding: var(--sp-2) var(--sp-3);
+      background: var(--bg-raised); border-radius: var(--radius-sm);
+      display: flex; align-items: flex-start; gap: var(--sp-2);
+    }
+
+    /* Download / actions */
+    .al-result-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
+    .al-btn-download {
+      background: var(--brand-subtle); border: 1px solid var(--brand-border);
+      color: var(--brand-hover); border-radius: var(--radius); padding: 8px 14px;
+      font-size: 0.8125rem; font-weight: 600; font-family: var(--font); cursor: pointer;
+      transition: background var(--dur);
+    }
+    .al-btn-download:hover { background: rgba(37,99,235,0.2); }
+
+    /* Education box */
+    .al-edu { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--sp-6); margin-top: var(--sp-8); }
+    .al-edu-title { font-size: 0.9375rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-4); }
+    .al-edu-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+    .al-edu-point { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+    .al-edu-point strong { color: var(--text-primary); font-weight: 600; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .al-stats-grid { grid-template-columns: repeat(2,1fr); }
+      .al-edu-grid   { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <div class="al-wrap" style="padding-top:var(--sp-8)">
+
+    <!-- Page header -->
+    <div class="pg-page-header">
+      <div class="pg-page-header__eyebrow">Flagship Feature</div>
+      <div class="pg-page-header__title">Personalized Attack Lab</div>
+      <div class="pg-page-header__desc">
+        Generate a custom attack dictionary from your personal information — names, dates, pets, nicknames —
+        and test whether your password would survive a targeted attack. This is what separates PassGuard from every other strength meter.
+      </div>
+      <div class="pg-page-header__meta">
+        <span class="pg-badge pg-badge--success">Fully Offline</span>
+        <span class="pg-badge pg-badge--danger">Simulates Real Attacks</span>
+      </div>
+    </div>
+
+    <!-- ── Attack flag ─────────────────────────────────── -->
+    <div class="al-flag" role="note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      All data is processed locally. Nothing you enter here is sent to any server.
+    </div>
+
+    <!-- ── Password input ──────────────────────────────── -->
+    <div class="pg-card pg-mb-6" id="al-pw-section">
+      <div class="pg-section-title">Password to Test</div>
+      <div class="al-pw-row">
+        <input
+          type="password"
+          id="al-password-input"
+          class="al-input al-pw-input"
+          placeholder="Enter the password you want to test"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="al-pw-toggle" id="al-toggle-vis">Show</button>
+      </div>
+      <p class="pg-caption">This password will be checked against the dictionary generated from your profile below.</p>
+    </div>
+
+    <!-- ── Profile form ────────────────────────────────── -->
+    <div class="pg-card pg-mb-6">
+      <div class="pg-section-title">Personal Profile</div>
+      <p class="pg-body-sm pg-mb-4">Fill in what you know. All fields are optional. More detail generates a more realistic attack dictionary.</p>
+
+      <div class="al-form-grid">
+        <div class="al-field">
+          <label class="al-label" for="al-first-name">First Name</label>
+          <input type="text" id="al-first-name" class="al-input" placeholder="e.g. Sanskar" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-last-name">Last Name</label>
+          <input type="text" id="al-last-name" class="al-input" placeholder="e.g. Phougat" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-nickname">Nickname</label>
+          <input type="text" id="al-nickname" class="al-input" placeholder="e.g. Sandy" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-username">Username</label>
+          <input type="text" id="al-username" class="al-input" placeholder="e.g. sanskar_01" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-dob">Date of Birth</label>
+          <input type="date" id="al-dob" class="al-input" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-partner">Partner's Name</label>
+          <input type="text" id="al-partner" class="al-input" placeholder="e.g. Priya" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-pet">Pet's Name</label>
+          <input type="text" id="al-pet" class="al-input" placeholder="e.g. Bruno" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-company">Company / School</label>
+          <input type="text" id="al-company" class="al-input" placeholder="e.g. TechCorp" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field">
+          <label class="al-label" for="al-fav-num">Favourite Number</label>
+          <input type="text" id="al-fav-num" class="al-input" placeholder="e.g. 7" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="al-field" style="grid-column:1/-1">
+          <label class="al-label" for="al-keywords">Keywords <span class="al-hint">(comma-separated)</span></label>
+          <input type="text" id="al-keywords" class="al-input" placeholder="e.g. cricket, chess, guitar" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="al-actions">
+        <button class="al-btn-run" id="al-run-btn">Generate Dictionary &amp; Analyze</button>
+        <button class="al-btn-clear" id="al-clear-btn">Clear All</button>
+        <a href="/app/profile.html" class="pg-btn pg-btn--ghost pg-btn--sm">Manage Saved Profile &rsaquo;</a>
+      </div>
+    </div>
+
+    <!-- ── Loading ─────────────────────────────────────── -->
+    <div class="pg-card hidden" id="al-loading" aria-live="polite">
+      <div style="display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-4)">
+        <div class="al-spinner"></div>
+        <div>
+          <div style="font-size:0.9375rem;font-weight:600;color:var(--text-primary)" id="al-loading-title">Generating personalized dictionary</div>
+          <div style="font-size:0.8125rem;color:var(--text-secondary);margin-top:2px" id="al-loading-sub">Analyzing name combinations, dates, and patterns…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Results ─────────────────────────────────────── -->
+    <div id="al-results" class="hidden" aria-live="polite">
+
+      <!-- Attack flow -->
+      <div class="al-flow" role="img" aria-label="Attack pipeline visualization">
+        <div class="al-flow-node">Profile Data</div>
+        <div class="al-flow-arrow">›</div>
+        <div class="al-flow-node">Pattern Engine</div>
+        <div class="al-flow-arrow">›</div>
+        <div class="al-flow-node">Dictionary<br/><span id="al-flow-size" style="font-weight:700">—</span> entries</div>
+        <div class="al-flow-arrow">›</div>
+        <div class="al-flow-node" id="al-flow-result">Testing…</div>
+        <div class="al-flow-arrow">›</div>
+        <div class="al-flow-node" id="al-flow-verdict">Result</div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="al-stats-grid">
+        <div class="al-stat">
+          <div class="al-stat__val" id="al-dict-size">—</div>
+          <div class="al-stat__label">Dictionary Size</div>
+          <div class="al-stat__sub">passwords generated</div>
+        </div>
+        <div class="al-stat" id="al-found-stat">
+          <div class="al-stat__val" id="al-found">—</div>
+          <div class="al-stat__label">Password Found</div>
+          <div class="al-stat__sub" id="al-found-sub">in dictionary</div>
+        </div>
+        <div class="al-stat" id="al-rank-stat">
+          <div class="al-stat__val" id="al-rank">—</div>
+          <div class="al-stat__label">Attack Rank</div>
+          <div class="al-stat__sub">guess number</div>
+        </div>
+      </div>
+
+      <!-- Score bar + risk -->
+      <div class="pg-card pg-mb-4">
+        <div class="al-score-header">
+          <span class="al-score-label">Personalized Attack Resistance</span>
+          <span class="al-score-value" id="al-score-value">—</span>
+        </div>
+        <div class="al-score-track">
+          <div class="al-score-fill" id="al-score-fill"></div>
+        </div>
+
+        <div class="al-risk-row">
+          <span class="al-risk-label">Risk Level</span>
+          <span class="al-risk-badge" id="al-risk-badge">—</span>
+        </div>
+
+        <div class="pg-section-title" style="margin-top:var(--sp-4)">Analysis Details</div>
+        <ul class="al-explanation-list" id="al-explanation-list"></ul>
+
+        <div class="al-result-actions">
+          <button class="al-btn-download" id="al-download-btn">Download Dictionary</button>
+          <button class="al-btn-clear" id="al-rerun-btn">Edit &amp; Re-run</button>
+          <a href="/app/analyzer.html" class="pg-btn pg-btn--ghost pg-btn--sm">Full Strength Analysis &rsaquo;</a>
+        </div>
+      </div>
+
+    </div><!-- /al-results -->
+
+    <!-- ── Education ───────────────────────────────────── -->
+    <div class="al-edu">
+      <div class="al-edu-title">Why targeted attacks are different</div>
+      <div class="al-edu-grid">
+        <div class="al-edu-point">
+          <strong>Standard dictionary attacks</strong> use wordlists of millions of common passwords.
+          They work against generic choices like "password123" or "qwerty".
+        </div>
+        <div class="al-edu-point">
+          <strong>Personalized attacks</strong> are different. An attacker who knows your name, birthday,
+          or pet's name will generate combinations like <code>Bruno2004</code>, <code>Sanskar@123</code>,
+          or <code>Phougat#07</code> — passwords that pass generic strength checks but fail against a targeted attacker.
+        </div>
+        <div class="al-edu-point">
+          <strong>PassGuard's engine</strong> generates thousands of variants using your real information,
+          then checks whether your password appears in that dictionary — simulating exactly what an attacker who knows you would do.
+        </div>
+        <div class="al-edu-point">
+          <strong>The result</strong> is a personalized resistance score on top of the standard strength score.
+          A password can score 75/100 on strength but still be in your personalized attack dictionary at rank #42.
+        </div>
+      </div>
+      <div style="margin-top:var(--sp-4)">
+        <a href="/app/academy.html#attacks-personalized" class="pg-btn pg-btn--ghost pg-btn--sm">
+          Learn more: Personalized Attacks &rsaquo;
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+  // ── Attack Lab standalone logic ────────────────────────────
+  const { runPersonalizedAnalysis, downloadDictionary } =
+    await import('../shared/personalDictionary.js');
+
+  const $ = id => document.getElementById(id);
+  let lastDict = [], lastProfileName = '';
+  let pwVisible = false;
+
+  // Toggle password visibility
+  $('al-toggle-vis').addEventListener('click', () => {
+    pwVisible = !pwVisible;
+    $('al-password-input').type = pwVisible ? 'text' : 'password';
+    $('al-toggle-vis').textContent = pwVisible ? 'Hide' : 'Show';
+  });
+
+  // Clear form
+  $('al-clear-btn').addEventListener('click', () => {
+    ['al-first-name','al-last-name','al-nickname','al-username',
+     'al-dob','al-partner','al-pet','al-company','al-fav-num','al-keywords'].forEach(id => $( id).value = '');
+    $('al-password-input').value = '';
+    $('al-results').classList.add('hidden');
+  });
+
+  // Re-run
+  $('al-rerun-btn').addEventListener('click', () => {
+    $('al-results').classList.add('hidden');
+    $('al-password-input').focus();
+  });
+
+  // Download
+  $('al-download-btn').addEventListener('click', () => {
+    if (!lastDict.length) return;
+    downloadDictionary(lastDict, lastProfileName || 'passguard');
+  });
+
+  // Run analysis
+  $('al-run-btn').addEventListener('click', async () => {
+    const pw = $('al-password-input').value.trim();
+    if (!pw) { $('al-password-input').focus(); return; }
+
+    const profile = {
+      firstName:   $('al-first-name').value.trim(),
+      lastName:    $('al-last-name').value.trim(),
+      nickname:    $('al-nickname').value.trim(),
+      username:    $('al-username').value.trim(),
+      dob:         $('al-dob').value,
+      partner:     $('al-partner').value.trim(),
+      pet:         $('al-pet').value.trim(),
+      company:     $('al-company').value.trim(),
+      favNumber:   $('al-fav-num').value.trim(),
+      keywords:    $('al-keywords').value.trim(),
+    };
+
+    lastProfileName = profile.firstName || 'profile';
+
+    $('al-results').classList.add('hidden');
+    $('al-loading').classList.remove('hidden');
+
+    try {
+      const result = await runPersonalizedAnalysis(pw, profile);
+      lastDict = result.dictionary || [];
+
+      // Update flow
+      $('al-flow-size').textContent = (lastDict.length || result.dictSize || 0).toLocaleString();
+      $('al-flow-result').textContent = result.found ? 'MATCH FOUND' : 'No match';
+      $('al-flow-result').className = 'al-flow-node ' + (result.found ? 'al-flow-node--match' : 'al-flow-node--safe');
+      $('al-flow-verdict').textContent = result.found ? 'Vulnerable' : 'Resistant';
+      $('al-flow-verdict').className = 'al-flow-node ' + (result.found ? 'al-flow-node--match' : 'al-flow-node--safe');
+
+      // Stats
+      $('al-dict-size').textContent = (result.dictSize || lastDict.length || 0).toLocaleString();
+      const foundEl = $('al-found');
+      const rankEl  = $('al-rank');
+      if (result.found) {
+        foundEl.textContent = 'Yes';
+        foundEl.style.color  = 'var(--danger)';
+        $('al-found-stat').classList.add('al-stat--danger');
+        rankEl.textContent  = `#${result.rank.toLocaleString()}`;
+        rankEl.style.color  = result.rank <= 100 ? 'var(--danger)' : result.rank <= 1000 ? '#fca5a5' : 'var(--warning)';
+        $('al-found-sub').textContent = `at guess #${result.rank}`;
+      } else {
+        foundEl.textContent = 'No';
+        foundEl.style.color  = 'var(--success)';
+        $('al-found-stat').classList.add('al-stat--success');
+        rankEl.textContent  = 'Not found';
+        rankEl.style.color  = 'var(--success)';
+      }
+
+      // Score
+      $('al-score-value').textContent = `${result.personalizedAttackScore}/100`;
+      const fill = $('al-score-fill');
+      fill.style.width      = `${result.personalizedAttackScore}%`;
+      fill.style.background = result.personalizedAttackScore >= 70 ? 'var(--success)' : result.personalizedAttackScore >= 40 ? 'var(--warning)' : 'var(--danger)';
+
+      // Risk badge
+      const badge = $('al-risk-badge');
+      const [riskLabel, riskClass] = result.found
+        ? (result.rank <= 100  ? ['Critical Risk', 'al-risk--critical'] :
+           result.rank <= 1000 ? ['High Risk',     'al-risk--high']     :
+           result.rank <= 5000 ? ['Medium Risk',   'al-risk--medium']   :
+                                 ['Low Risk',       'al-risk--low'])
+        : ['Resistant', 'al-risk--none'];
+      badge.textContent = riskLabel;
+      badge.className   = `al-risk-badge ${riskClass}`;
+
+      // Explanation
+      const list = $('al-explanation-list');
+      const exps = result.explanations || result.reasoning || [];
+      list.innerHTML = (Array.isArray(exps) ? exps : [String(exps)]).map(e =>
+        `<li><span style="flex-shrink:0;color:var(--text-muted)">›</span> ${e}</li>`
+      ).join('');
+
+      $('al-loading').classList.add('hidden');
+      $('al-results').classList.remove('hidden');
+    } catch (err) {
+      $('al-loading').classList.add('hidden');
+      console.error('[Attack Lab]', err);
+    }
+  });
+</script>
+
+</body>
+</html>

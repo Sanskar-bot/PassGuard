@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Generate strong, memorable passwords with four modes: Memorable, Passphrase, Max Security, and Personalized. Live strength analysis. Fully offline." />
+  <title>Password Generator — PassGuard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <link rel="stylesheet" href="style.css?v=5" />
+  <style>
+    /* ── Generator page overrides ──────────────────────────────
+       Preserves all IDs / class hooks used by smartGeneratorUI.js
+       while applying the platform.css design tokens.
+    ────────────────────────────────────────────────────────── */
+
+    .page-wrapper { background: var(--bg-base); color: var(--text-primary); padding-top: var(--nav-h); }
+    .site-header  { display: none; }
+    .site-footer  { max-width: var(--content-max); margin-inline: auto; padding-inline: var(--sp-6); padding-block: var(--sp-8); border-top: 1px solid var(--border-subtle); margin-top: var(--sp-10); font-size: 0.8125rem; color: var(--text-muted); }
+
+    .gn-wrap {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--sp-6);
+    }
+
+    /* ── Mode tabs ──────────────────────────────────────────── */
+    .sg-section { max-width: var(--content-max); margin-inline: auto; padding-inline: var(--sp-6); padding-top: 0; }
+
+    .sg-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-5);
+    }
+    .section-heading { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; margin-bottom: 4px; }
+    .sg-subtitle { font-size: 0.875rem; color: var(--text-secondary); }
+    .sg-privacy-badge {
+      background: var(--success-subtle);
+      border: 1px solid var(--success-border);
+      color: var(--success);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .sg-tabs-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-3);
+      flex-wrap: wrap;
+    }
+    .sg-mode-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 3px;
+    }
+    .sg-tab {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color var(--dur), background var(--dur);
+      white-space: nowrap;
+    }
+    .sg-tab:hover  { color: var(--text-primary); }
+    .sg-tab.active { background: var(--bg-surface); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-sm); }
+    .sg-tab--personal { color: var(--brand-hover); }
+    .sg-tab--personal.active { color: var(--brand-hover); }
+    .sg-profile-pill {
+      font-size: 0.75rem; font-weight: 600; padding: 4px 10px;
+      background: var(--brand-subtle); border: 1px solid var(--brand-border);
+      color: var(--brand-hover); border-radius: 20px;
+    }
+
+    .sg-mode-desc {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: var(--sp-4);
+      padding: var(--sp-2) var(--sp-3);
+      background: var(--bg-raised);
+      border-radius: var(--radius-sm);
+      border-left: 2px solid var(--brand);
+    }
+
+    /* ── Main card ──────────────────────────────────────────── */
+    .sg-main-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--sp-6);
+      box-shadow: var(--shadow);
+    }
+
+    /* Password output row */
+    .sg-output-row {
+      display: flex;
+      gap: var(--sp-5);
+      align-items: flex-start;
+      margin-bottom: var(--sp-4);
+    }
+    .sg-pw-wrap { flex: 1; }
+    .sg-pw-label { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--sp-2); }
+    .sg-pw-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      outline: none;
+      letter-spacing: 0.02em;
+      transition: border-color var(--dur), box-shadow var(--dur);
+    }
+    .sg-pw-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .sg-pw-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; }
+
+    /* Mini score card */
+    .sg-score-card {
+      flex-shrink: 0;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-4);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-4);
+      min-width: 200px;
+    }
+    .sg-score-ring-wrap { position: relative; flex-shrink: 0; }
+    .sg-ring-bg   { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+    .sg-ring-fill {
+      fill: none; stroke-width: 8; stroke-linecap: round;
+      transform: rotate(-90deg); transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.5s ease, stroke 0.4s;
+    }
+    .sg-score-center { position: absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .sg-score-val { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sg-score-max { font-size: 0.625rem; color: var(--text-muted); }
+    .sg-score-meta { flex: 1; }
+    .sg-score-cat   { font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .sg-score-stats { font-size: 0.75rem; color: var(--text-muted); }
+    .sg-crack-line  { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Strength bar */
+    .sg-bar-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: var(--sp-4); }
+    .sg-bar-fill  { height: 100%; border-radius: 2px; transition: width 0.4s ease, background 0.3s; }
+
+    /* Actions */
+    .sg-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+    .sg-btn-primary {
+      background: var(--brand); color: #fff;
+      border: none; border-radius: var(--radius); padding: 9px 18px;
+      font-size: 0.875rem; font-weight: 600; font-family: var(--font);
+      transition: background var(--dur); cursor: pointer;
+    }
+    .sg-btn-primary:hover { background: var(--brand-hover); }
+    .sg-btn-secondary {
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      color: var(--text-primary); border-radius: var(--radius); padding: 9px 16px;
+      font-size: 0.875rem; font-weight: 600; font-family: var(--font);
+      transition: background var(--dur), border-color var(--dur); cursor: pointer;
+    }
+    .sg-btn-secondary:hover { background: var(--bg-overlay); border-color: rgba(255,255,255,0.18); }
+    .sg-btn-ghost {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-secondary); border-radius: var(--radius); padding: 9px 14px;
+      font-size: 0.875rem; font-weight: 500; font-family: var(--font);
+      transition: background var(--dur), color var(--dur); cursor: pointer;
+    }
+    .sg-btn-ghost:hover { background: var(--bg-raised); color: var(--text-primary); }
+
+    /* Warning badge */
+    .sg-warning-badge {
+      padding: var(--sp-3) var(--sp-4);
+      background: var(--warning-subtle);
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      color: var(--warning);
+      font-weight: 600;
+      margin-bottom: var(--sp-4);
+    }
+
+    /* Explain panel */
+    .sg-explain-panel {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4) var(--sp-5);
+    }
+    .sg-explain-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--sp-3); }
+    .sg-explain-grid  { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--sp-3); }
+    .sg-explain-row   { display: flex; align-items: center; justify-content: space-between; font-size: 0.875rem; }
+    .sg-explain-label { color: var(--text-secondary); }
+    .sg-explain-value { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sg-explain-reason { font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* Personal form (shown in Personalized mode) */
+    .sg-personal-form {
+      margin-top: var(--sp-4);
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-5);
+    }
+    .sg-pf-header { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+    .sg-pf-title  { font-size: 0.9375rem; font-weight: 700; color: var(--text-primary); }
+    .sg-pf-hint   { font-size: 0.8125rem; color: var(--text-muted); }
+    .sg-pf-grid   { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: var(--sp-3); }
+    .sg-pf-field  { display: flex; flex-direction: column; gap: 4px; }
+    .sg-pf-field--wide { grid-column: 1 / -1; }
+    .sg-pf-label  { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
+    .sg-pf-hint-inline { color: var(--text-muted); font-weight: 400; }
+    .sg-pf-input  {
+      width: 100%; padding: 7px 10px;
+      background: var(--bg-base); border: 1px solid var(--border-medium);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 0.875rem; font-family: var(--font); outline: none;
+      transition: border-color var(--dur);
+    }
+    .sg-pf-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .sg-pf-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-4); }
+    .sg-pf-save-btn { background: var(--brand); color: #fff; border: none; border-radius: var(--radius); padding: 7px 14px; font-size: 0.8125rem; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background var(--dur); }
+    .sg-pf-save-btn:hover { background: var(--brand-hover); }
+    .sg-pf-clear-btn { background: var(--bg-overlay); border: 1px solid var(--border-medium); color: var(--text-secondary); border-radius: var(--radius); padding: 7px 14px; font-size: 0.8125rem; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background var(--dur); }
+    .sg-pf-clear-btn:hover { background: var(--bg-raised); }
+    .sg-pf-privacy { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); margin-top: var(--sp-4); }
+    .sg-pf-privacy svg { flex-shrink: 0; }
+
+    /* Customise panel */
+    .sg-custom-wrap { margin-top: var(--sp-4); }
+    .sg-custom-toggle {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: var(--sp-3) var(--sp-4);
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 600;
+      color: var(--text-secondary); font-family: var(--font); cursor: pointer;
+      transition: background var(--dur), color var(--dur);
+    }
+    .sg-custom-toggle:hover { background: var(--bg-overlay); color: var(--text-primary); }
+    .sg-caret { transition: transform var(--dur); color: var(--text-muted); font-size: 0.75rem; }
+    .sg-custom-panel {
+      margin-top: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-5);
+    }
+    .sg-custom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: var(--sp-5); }
+    .sg-custom-field { display: flex; flex-direction: column; gap: var(--sp-2); }
+    .sg-custom-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); }
+    .sg-slider-row   { display: flex; align-items: center; gap: var(--sp-3); }
+    .sg-slider-val   { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); min-width: 20px; }
+    input[type="range"] {
+      flex: 1; accent-color: var(--brand);
+      background: transparent; height: 4px;
+    }
+
+    /* Separator buttons */
+    .sg-sep-group { display: flex; gap: 2px; }
+    .sg-sep-btn {
+      padding: 5px 10px; border-radius: var(--radius-sm);
+      background: var(--bg-raised); border: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 0.8125rem; font-weight: 600;
+      font-family: var(--font-mono); cursor: pointer;
+      transition: background var(--dur), color var(--dur), border-color var(--dur);
+    }
+    .sg-sep-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
+    .sg-sep-btn.active { background: var(--brand-subtle); border-color: var(--brand-border); color: var(--brand-hover); }
+
+    /* Toggle */
+    .sg-toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .sg-toggle input { opacity: 0; width: 0; height: 0; }
+    .sg-toggle-track {
+      position: absolute; inset: 0; border-radius: 10px;
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      cursor: pointer; transition: background var(--dur);
+    }
+    .sg-toggle-track::after {
+      content: ''; position: absolute; left: 2px; top: 2px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--text-muted); transition: transform var(--dur), background var(--dur);
+    }
+    .sg-toggle input:checked + .sg-toggle-track { background: var(--brand); border-color: var(--brand); }
+    .sg-toggle input:checked + .sg-toggle-track::after { transform: translateX(16px); background: #fff; }
+
+    /* Select */
+    .sg-select {
+      width: 100%; padding: 7px 10px;
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 0.875rem; font-family: var(--font); outline: none;
+      cursor: pointer; color-scheme: dark;
+    }
+    .sg-select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .sg-output-row { flex-direction: column; }
+      .sg-score-card { min-width: auto; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<!-- nav injected by nav.js -->
+
+<div class="page-wrapper">
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <div class="gn-wrap" style="padding-top:var(--sp-8)">
+    <div class="pg-page-header">
+      <div class="pg-page-header__eyebrow">Tool</div>
+      <div class="pg-page-header__title">Password Generator</div>
+      <div class="pg-page-header__desc">
+        Four generation modes — Memorable, Passphrase, Max Security, and Personalized.
+        Edit generated passwords freely with live strength analysis.
+      </div>
+      <div class="pg-page-header__meta">
+        <span class="pg-badge pg-badge--success">Fully Offline</span>
+        <span class="pg-badge pg-badge--neutral">Local Only</span>
+        <a href="/app/analyzer.html" class="pg-badge pg-badge--brand" style="text-decoration:none">Analyze in Detail &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Smart Password Generator ─────────────────────────────── -->
+  <section class="sg-section" id="smart-generator" aria-label="Smart password generator">
+
+    <div class="sg-header-row">
+      <div>
+        <h1 class="section-heading">Smart Password Generator</h1>
+        <p class="sg-subtitle">Memorable, secure passwords — edit freely and see live analysis</p>
+      </div>
+      <span class="sg-privacy-badge">Local Only</span>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="sg-tabs-row">
+      <div class="sg-mode-tabs" role="tablist" aria-label="Generator mode">
+        <button class="sg-tab active" id="tab-memorable" role="tab" data-mode="smartMemorable" aria-selected="true">Memorable</button>
+        <button class="sg-tab" id="tab-passphrase" role="tab" data-mode="passphrase" aria-selected="false">Passphrase</button>
+        <button class="sg-tab" id="tab-max" role="tab" data-mode="maxSecurity" aria-selected="false">Max Security</button>
+        <button class="sg-tab sg-tab--personal" id="tab-personal" role="tab" data-mode="personalSecure" aria-selected="false">Personalized</button>
+      </div>
+      <span id="sg-profile-pill" class="sg-profile-pill" hidden>No profile</span>
+    </div>
+
+    <div class="sg-mode-desc" id="sg-mode-desc">
+      Title-cased words + number suffix &mdash; easy to type, hard to crack
+    </div>
+
+    <!-- Main card -->
+    <div class="sg-main-card">
+
+      <div class="sg-output-row">
+        <div class="sg-pw-wrap">
+          <label class="sg-pw-label" for="sg-password">Generated Password</label>
+          <input
+            type="text"
+            id="sg-password"
+            class="sg-pw-input"
+            placeholder="Click Generate to create a password…"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Generated password — editable"
+          />
+          <div class="sg-pw-hint">You can edit this password directly — analysis updates live.</div>
+        </div>
+
+        <!-- Mini score card -->
+        <div class="sg-score-card" id="sg-score-card" style="display:none">
+          <div class="sg-score-ring-wrap">
+            <svg width="64" height="64" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="sg-ring-bg"   cx="60" cy="60" r="50"/>
+              <circle class="sg-ring-fill" id="sg-ring-fill" cx="60" cy="60" r="50"/>
+            </svg>
+            <div class="sg-score-center">
+              <span class="sg-score-val" id="sg-score-val">0</span>
+              <span class="sg-score-max">/100</span>
+            </div>
+          </div>
+          <div class="sg-score-meta">
+            <div class="sg-score-cat" id="sg-score-cat">—</div>
+            <div class="sg-score-stats">
+              <span id="sg-entropy">—</span> bits &middot; <span id="sg-length">0</span> chars
+            </div>
+            <div class="sg-crack-line" id="sg-crack-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strength bar -->
+      <div class="sg-bar-track" id="sg-bar-track" style="display:none">
+        <div class="sg-bar-fill" id="sg-bar-fill"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="sg-actions">
+        <button class="sg-btn-primary" id="sg-generate-btn" aria-label="Generate new password">Generate</button>
+        <button class="sg-btn-secondary" id="sg-regen-btn" aria-label="Regenerate password" style="display:none">Regenerate</button>
+        <button class="sg-btn-secondary" id="sg-copy-btn" aria-label="Copy password" style="display:none">Copy</button>
+        <button class="sg-btn-ghost" id="sg-analyse-btn" aria-label="Send to analyzer" style="display:none">
+          Analyze in detail &darr;
+        </button>
+      </div>
+
+      <!-- Warning badge -->
+      <div id="sg-warning-badge" class="sg-warning-badge" hidden></div>
+
+      <!-- Explainability panel -->
+      <div id="sg-explain-panel" class="sg-explain-panel" hidden>
+        <div class="sg-explain-title">Password Analysis</div>
+        <div class="sg-explain-grid">
+          <div class="sg-explain-row">
+            <span class="sg-explain-label">Strength Score</span>
+            <span class="sg-explain-value" id="sg-explain-strength">—</span>
+          </div>
+          <div class="sg-explain-row">
+            <span class="sg-explain-label">Personal Attack Score</span>
+            <span class="sg-explain-value" id="sg-explain-personal">—</span>
+          </div>
+        </div>
+        <div class="sg-explain-reason" id="sg-explain-reason">—</div>
+      </div>
+
+    </div><!-- /sg-main-card -->
+
+    <!-- Personalized profile form -->
+    <div id="sg-personal-form" class="sg-personal-form" hidden>
+      <div class="sg-pf-header">
+        <span class="sg-pf-title">Your Profile</span>
+        <span class="sg-pf-hint">Stored locally. Used as memory anchors — never embedded directly.</span>
+      </div>
+      <div class="sg-pf-grid">
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-first-name">First Name</label>
+          <input type="text" id="sgp-first-name" class="sg-pf-input" placeholder="e.g. Sanskar" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-last-name">Last Name</label>
+          <input type="text" id="sgp-last-name" class="sg-pf-input" placeholder="e.g. Phougat" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-nickname">Nickname</label>
+          <input type="text" id="sgp-nickname" class="sg-pf-input" placeholder="e.g. San" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-pet">Pet Name</label>
+          <input type="text" id="sgp-pet" class="sg-pf-input" placeholder="e.g. Bruno" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-partner">Partner Name</label>
+          <input type="text" id="sgp-partner" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-company">Company / School</label>
+          <input type="text" id="sgp-company" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-dob">Date of Birth</label>
+          <input type="date" id="sgp-dob" class="sg-pf-input" />
+        </div>
+        <div class="sg-pf-field">
+          <label class="sg-pf-label" for="sgp-fav-num">Favourite Number</label>
+          <input type="text" id="sgp-fav-num" class="sg-pf-input" placeholder="e.g. 7" autocomplete="off" />
+        </div>
+        <div class="sg-pf-field sg-pf-field--wide">
+          <label class="sg-pf-label" for="sgp-keywords">
+            Keywords <span class="sg-pf-hint-inline">(comma-separated)</span>
+          </label>
+          <input type="text" id="sgp-keywords" class="sg-pf-input" placeholder="e.g. cricket, physics" autocomplete="off" />
+        </div>
+      </div>
+      <div class="sg-pf-actions">
+        <button class="sg-pf-save-btn" id="sgp-save-btn">Save Profile</button>
+        <button class="sg-pf-clear-btn" id="sgp-clear-btn">Clear</button>
+      </div>
+      <div class="sg-pf-privacy">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Profile saved in your browser only. Never transmitted anywhere.
+      </div>
+    </div>
+
+    <!-- Customise panel -->
+    <div class="sg-custom-wrap">
+      <button class="sg-custom-toggle" id="sg-custom-toggle" aria-expanded="false">
+        Customize
+        <span class="sg-caret" id="sg-custom-caret">&#9660;</span>
+      </button>
+      <div class="sg-custom-panel" id="sg-custom-panel" hidden>
+        <div class="sg-custom-grid">
+
+          <!-- Word count -->
+          <div class="sg-custom-field" id="sg-wc-field">
+            <label class="sg-custom-label" for="sg-word-count">Word Count</label>
+            <div class="sg-slider-row">
+              <input type="range" id="sg-word-count" min="2" max="5" value="3" aria-label="Word count"/>
+              <span class="sg-slider-val" id="sg-wc-val">3</span>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <div class="sg-custom-field" id="sg-sep-field">
+            <label class="sg-custom-label">Separator</label>
+            <div class="sg-sep-group" role="group" aria-label="Word separator">
+              <button class="sg-sep-btn active" data-sep="">None</button>
+              <button class="sg-sep-btn" data-sep="-"> - </button>
+              <button class="sg-sep-btn" data-sep="_"> _ </button>
+              <button class="sg-sep-btn" data-sep="."> . </button>
+            </div>
+          </div>
+
+          <!-- Numbers -->
+          <div class="sg-custom-field">
+            <label class="sg-custom-label" for="sg-use-nums">Include Numbers</label>
+            <label class="sg-toggle">
+              <input type="checkbox" id="sg-use-nums" checked />
+              <span class="sg-toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Symbols -->
+          <div class="sg-custom-field">
+            <label class="sg-custom-label" for="sg-use-syms">Include Symbol</label>
+            <label class="sg-toggle">
+              <input type="checkbox" id="sg-use-syms" />
+              <span class="sg-toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Capitalize -->
+          <div class="sg-custom-field" id="sg-caps-field">
+            <label class="sg-custom-label" for="sg-capitalize">Capitalize Words</label>
+            <label class="sg-toggle">
+              <input type="checkbox" id="sg-capitalize" checked />
+              <span class="sg-toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Category -->
+          <div class="sg-custom-field" id="sg-cat-field">
+            <label class="sg-custom-label" for="sg-category">Word Theme</label>
+            <select id="sg-category" class="sg-select">
+              <option value="">Any</option>
+              <option value="tech">Technology</option>
+              <option value="space">Space</option>
+              <option value="nature">Nature</option>
+              <option value="animals">Animals</option>
+              <option value="science">Science</option>
+              <option value="fantasy">Fantasy</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden legacy stubs -->
+    <input type="hidden" id="gen-length"        value="20" />
+    <input type="hidden" id="gen-lower" />
+    <input type="hidden" id="gen-upper" />
+    <input type="hidden" id="gen-digits" />
+    <input type="hidden" id="gen-symbols" />
+    <textarea id="gen-output" style="display:none" readonly></textarea>
+    <button   id="gen-btn"      style="display:none"></button>
+    <button   id="gen-copy-btn" style="display:none"></button>
+    <button   id="gen-use-btn"  style="display:none"></button>
+    <span     id="gen-length-display" style="display:none"></span>
+
+    <!-- Hidden stubs for analyzer IDs (smartGeneratorUI.js may reference these) -->
+    <input type="hidden" id="password-input" />
+    <input type="hidden" id="username-input" />
+    <div id="results-panel"  style="display:none"></div>
+    <div id="empty-state"    style="display:none"></div>
+    <div id="breakdown-bars" style="display:none"></div>
+    <div id="issues-list"    style="display:none"></div>
+    <div id="issues-panel"   style="display:none"></div>
+    <tbody id="crack-time-body" style="display:none"></tbody>
+    <div id="suggestions-list" style="display:none"></div>
+    <div id="score-ring-fill"  style="display:none"></div>
+    <span id="score-value"     style="display:none"></span>
+    <div id="score-category"   style="display:none"></div>
+    <div id="strength-bar"     style="display:none"></div>
+    <span id="strength-label"  style="display:none"></span>
+    <span id="stat-length"  style="display:none"></span>
+    <span id="stat-entropy" style="display:none"></span>
+    <span id="stat-charset" style="display:none"></span>
+    <span id="stat-variety" style="display:none"></span>
+    <div id="ind-lower"  style="display:none"></div>
+    <div id="ind-upper"  style="display:none"></div>
+    <div id="ind-digit"  style="display:none"></div>
+    <div id="ind-symbol" style="display:none"></div>
+    <div id="personal-attack-section" style="display:none"></div>
+    <div id="personal-cta-card"       style="display:none"></div>
+    <button id="show-personal-form-btn" style="display:none"></button>
+    <div id="personal-form-card"      style="display:none"></div>
+    <button id="run-personal-analysis-btn" style="display:none"></button>
+    <button id="cancel-personal-btn"  style="display:none"></button>
+    <div id="personal-loading-card"   style="display:none"></div>
+    <div id="personal-results-card"   style="display:none"></div>
+    <button id="rerun-personal-btn"   style="display:none"></button>
+    <button id="download-dict-btn"    style="display:none"></button>
+    <span id="pa-dict-size" style="display:none"></span>
+    <span id="pa-found"     style="display:none"></span>
+    <span id="pa-found-sub" style="display:none"></span>
+    <div  id="pa-found-card"style="display:none"></div>
+    <span id="pa-rank"      style="display:none"></span>
+    <div  id="pa-rank-card" style="display:none"></div>
+    <span id="pa-score-value" style="display:none"></span>
+    <div  id="pa-score-fill"  style="display:none"></div>
+    <span id="pa-risk-badge"  style="display:none"></span>
+    <ul   id="pa-explanation-list" style="display:none"></ul>
+    <input type="hidden" id="pa-first-name" />
+    <input type="hidden" id="pa-last-name" />
+    <input type="hidden" id="pa-nickname" />
+    <input type="hidden" id="pa-username" />
+    <input type="hidden" id="pa-dob" />
+    <input type="hidden" id="pa-partner" />
+    <input type="hidden" id="pa-pet" />
+    <input type="hidden" id="pa-company" />
+    <button id="toggle-visibility" style="display:none"></button>
+    <button id="copy-btn" style="display:none"></button>
+
+  </section>
+
+  <footer class="site-footer" aria-label="Page footer">
+    <p>PassGuard runs entirely in your browser — your password is <strong>never sent anywhere</strong>.</p>
+  </footer>
+
+</div>
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+</script>
+<script type="module" src="app.js"></script>
+<script type="module" src="smartGeneratorUI.js"></script>
+
+</body>
+</html>

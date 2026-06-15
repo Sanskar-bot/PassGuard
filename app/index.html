@@ -3,610 +3,726 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Analyse your password's strength with entropy calculation, pattern detection, common wordlist checks, username similarity analysis, and brute-force time estimation. Fully offline." />
-  <title>PassGuard  Password Strength Analyzer</title>
+  <meta name="description" content="PassGuard is an intelligent password security platform. Analyze passwords with entropy math, personalized attack dictionaries, pattern detection, and brute-force simulations. Fully offline." />
+  <title>PassGuard — Password Security Platform</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <style>
+    /* ── Dashboard-specific styles ─────────────────────────── */
 
-  <!-- Favicon (inline SVG as data URI) -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'></text></svg>" />
+    /* Subtle grid background for hero */
+    .dash-hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+    }
 
-  <link rel="stylesheet" href="style.css?v=4" />
+    /* Gradient accent behind hero */
+    .dash-hero-glow {
+      position: absolute;
+      top: -80px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(37,99,235,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .dash-hero-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Attack features list in hero */
+    .dash-attack-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: var(--sp-8);
+    }
+    .dash-attack-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: 20px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .dash-attack-pill span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+      flex-shrink: 0;
+    }
+
+    /* Stats section */
+    .dash-stat-big {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .dash-stat-source {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Architecture flow */
+    .dash-arch-flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: var(--sp-2);
+    }
+    .dash-arch-node {
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4) var(--sp-5);
+      text-align: center;
+      min-width: 120px;
+    }
+    .dash-arch-node--active {
+      border-color: var(--brand-border);
+      background: var(--brand-subtle);
+    }
+    .dash-arch-node__label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: var(--sp-2);
+    }
+    .dash-arch-node__sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .dash-arch-arrow {
+      flex-shrink: 0;
+      padding-inline: var(--sp-2);
+      color: var(--text-muted);
+      font-size: 1.125rem;
+    }
+
+    /* Extension preview */
+    .dash-ext-preview {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--sp-6);
+      position: relative;
+      overflow: hidden;
+    }
+    .dash-ext-widget {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-width: 300px;
+      font-size: 0.875rem;
+    }
+    .dash-ext-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .dash-ext-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    .dash-ext-score { font-size: 0.875rem; font-weight: 800; color: #22c55e; }
+    .dash-ext-bar-track { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-bottom: 8px; }
+    .dash-ext-bar-fill { height: 100%; border-radius: 2px; background: #22c55e; }
+    .dash-ext-chips { display: flex; gap: 4px; margin-bottom: 8px; }
+    .dash-ext-chip {
+      flex: 1; text-align: center; padding: 3px 0;
+      border-radius: 4px; font-size: 9px; font-weight: 700;
+      font-family: monospace; border: 1px solid;
+    }
+    .dash-ext-chip--on { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+    .dash-ext-chip--off { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.15); color: rgba(239,68,68,0.5); }
+    .dash-ext-issues { display: flex; flex-wrap: wrap; gap: 4px; }
+    .dash-ext-issue {
+      padding: 2px 7px; border-radius: 20px; font-size: 9px; font-weight: 600;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d;
+    }
+
+    /* Privacy banner */
+    .dash-privacy {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--sp-8);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-8);
+      align-items: center;
+    }
+    @media (max-width: 700px) {
+      .dash-privacy { grid-template-columns: 1fr; }
+    }
+
+    .dash-privacy-point {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-4);
+    }
+    .dash-privacy-point:last-child { margin-bottom: 0; }
+    .dash-privacy-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--radius);
+      background: var(--success-subtle);
+      border: 1px solid var(--success-border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--success);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Section spacing */
+    .dash-section { padding-block: var(--sp-16); }
+    .dash-section--alt { background: var(--bg-surface); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+    .dash-section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--brand-hover);
+      margin-bottom: var(--sp-3);
+    }
+    .dash-section-title {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: var(--sp-4);
+    }
+    .dash-section-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* CTA section */
+    .dash-cta {
+      text-align: center;
+      padding-block: var(--sp-20);
+    }
+    .dash-cta__title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: var(--sp-4);
+    }
+    .dash-cta__desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin-inline: auto;
+      margin-bottom: var(--sp-8);
+      line-height: 1.65;
+    }
+  </style>
 </head>
 <body>
 
-<div class="page-wrapper">
+<!-- Navigation injected by nav.js -->
 
-  <!--  Header  -->
-  <header class="site-header">
-    <div class="logo-badge">
-      <span class="dot"></span>
-      Fully Offline · No Data Sent
-    </div>
-    <h1>PassGuard</h1>
-    <p>Analyse password strength with entropy maths, wordlist detection, pattern analysis, and real brute-force time estimates.</p>
-  </header>
+<!-- ── Hero ────────────────────────────────────────────────── -->
+<div class="dash-hero-wrap">
+  <div class="dash-hero-bg" aria-hidden="true"></div>
+  <div class="dash-hero-glow" aria-hidden="true"></div>
 
-  <!--  Input Card  -->
-  <section class="input-section" aria-label="Password input">
-
-    <div class="glass-card">
-      <label class="input-label" for="password-input">Password to Analyse</label>
-      <div class="input-row">
-        <input
-          type="password"
-          id="password-input"
-          class="password-field"
-          placeholder="Type or paste your password"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
-        <button class="icon-btn" id="toggle-visibility" aria-label="Toggle password visibility">Show</button>
-        <button class="icon-btn" id="copy-btn" aria-label="Copy password">Copy</button>
+  <div class="pg-container">
+    <div class="pg-hero">
+      <div class="pg-hero__eyebrow" aria-label="Platform status">
+        <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
+          <circle cx="4" cy="4" r="4" fill="currentColor"/>
+        </svg>
+        Fully offline · Zero data transmitted
       </div>
 
-      <!-- Strength bar -->
-      <div class="strength-bar-track" role="progressbar" aria-label="Password strength">
-        <div id="strength-bar"></div>
-      </div>
-      <div class="strength-label-row">
-        <span id="strength-label" class="strength-label"></span>
+      <h1 class="pg-hero__title">
+        Password Security<br/>Beyond Strength Meters
+      </h1>
+
+      <p class="pg-hero__subtitle">
+        PassGuard analyzes passwords against real attack models — entropy calculations,
+        personalized attack dictionaries, pattern detection, and brute-force simulations.
+        Not just a score. A complete security picture.
+      </p>
+
+      <div class="dash-attack-list" aria-label="Analysis capabilities">
+        <span class="dash-attack-pill"><span></span>Entropy Calculation</span>
+        <span class="dash-attack-pill"><span></span>Personalized Attack Dictionaries</span>
+        <span class="dash-attack-pill"><span></span>Pattern Detection</span>
+        <span class="dash-attack-pill"><span></span>Brute-Force Simulation</span>
+        <span class="dash-attack-pill"><span></span>Wordlist Matching</span>
+        <span class="dash-attack-pill"><span></span>Username Similarity</span>
       </div>
 
-      <!-- Character class indicators -->
-      <div class="char-indicators" aria-label="Character class checklist">
-        <div class="char-ind inactive" id="ind-lower">
-          <span class="ind-icon">a</span> Lowercase
-        </div>
-        <div class="char-ind inactive" id="ind-upper">
-          <span class="ind-icon">A</span> Uppercase
-        </div>
-        <div class="char-ind inactive" id="ind-digit">
-          <span class="ind-icon">1</span> Numbers
-        </div>
-        <div class="char-ind inactive" id="ind-symbol">
-          <span class="ind-icon">#</span> Symbols
-        </div>
+      <div class="pg-hero__actions">
+        <a href="/app/analyzer.html" class="pg-btn pg-btn--primary pg-btn--lg">Analyze a Password</a>
+        <a href="/app/attack-lab.html" class="pg-btn pg-btn--secondary pg-btn--lg">Open Attack Lab</a>
+        <a href="/app/academy.html" class="pg-btn pg-btn--ghost pg-btn--lg">Password Academy</a>
       </div>
-    </div>
 
-    <div class="glass-card">
-      <label class="input-label" for="username-input">Username (optional)</label>
-      <div class="input-row">
-        <input
-          type="text"
-          id="username-input"
-          class="text-field"
-          placeholder="Enter your username to check similarity"
-          autocomplete="off"
-          spellcheck="false"
-        />
+      <div class="pg-hero__meta">
+        <span class="pg-hero__meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          No account required
+        </span>
+        <span class="pg-hero__meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          Open source
+        </span>
+        <span class="pg-hero__meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Instant results
+        </span>
       </div>
-    </div>
-
-  </section>
-
-  <!--  Empty state  -->
-  <div id="empty-state" aria-live="polite">
-    <div class="empty-state">
-      <div class="empty-icon"></div>
-      <p>Enter a password above to see your full security report.</p>
     </div>
   </div>
+</div>
 
-  <!--  Results  -->
-  <section id="results-panel" class="hidden" aria-live="polite" aria-label="Analysis results">
-
-    <div class="results-grid">
-
-      <!-- Left column: Score ring + breakdown -->
-      <div>
-        <div class="glass-card score-card">
-          <!-- SVG Score Ring -->
-          <div class="score-ring-wrap" role="img" aria-label="Password score ring">
-            <svg width="160" height="160" viewBox="0 0 120 120">
-              <circle id="score-ring-bg"   cx="60" cy="60" r="54" />
-              <circle id="score-ring-fill" cx="60" cy="60" r="54" />
-            </svg>
-            <div class="score-center">
-              <span id="score-value" aria-label="Score">0</span>
-              <span class="score-max">/100</span>
-            </div>
-          </div>
-
-          <div id="score-category" class="score-category"></div>
-
-          <!-- Score breakdown bars -->
-          <div class="section-title">Score Breakdown</div>
-          <div id="breakdown-bars"></div>
-        </div>
-      </div>
-
-      <!-- Right column: stats, issues, crack time, suggestions -->
-      <div>
-
-        <!-- Stat cards -->
-        <div class="stats-grid" aria-label="Password statistics">
-          <div class="stat-card">
-            <div class="stat-label">Length</div>
-            <div class="stat-value" id="stat-length"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Entropy</div>
-            <div class="stat-value" id="stat-entropy"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Charset Size</div>
-            <div class="stat-value" id="stat-charset"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Variety</div>
-            <div class="stat-value" id="stat-variety"></div>
-          </div>
-        </div>
-
-        <!-- Issues panel (hidden when no issues) -->
-        <div id="issues-panel" class="issues-panel hidden" role="alert" aria-label="Security issues">
-          <div class="issues-header"> Issues Found</div>
-          <ul id="issues-list" class="issues-list"></ul>
-        </div>
-
-        <!-- Crack time table -->
-        <div class="glass-card" style="padding: var(--sp-lg); margin-bottom: var(--sp-lg);">
-          <div class="section-title">Estimated Crack Time</div>
-          <table class="crack-table" aria-label="Brute-force crack time estimates">
-            <thead>
-              <tr>
-                <th>Attack Scenario</th>
-                <th style="text-align:right;">Est. Time</th>
-              </tr>
-            </thead>
-            <tbody id="crack-time-body"></tbody>
-          </table>
-        </div>
-
-        <!-- Suggestions -->
-        <div class="glass-card" style="padding: var(--sp-lg);">
-          <div class="section-title">Suggestions</div>
-          <div id="suggestions-list" class="suggestions-list"></div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!--  Advanced Personalized Attack Analysis  -->
-  <section id="personal-attack-section" class="hidden personal-attack-section" aria-label="Advanced personalized attack analysis">
-
-    <h2 class="section-heading"> Advanced Personalized Attack Analysis</h2>
-
-    <!-- Step 2: CTA card  always visible when password is entered -->
-    <div id="personal-cta-card" class="glass-card personal-cta-card">
-      <div class="personal-cta-inner">
-        <div class="personal-cta-icon">️</div>
-        <div class="personal-cta-text">
-          <div class="personal-cta-title">Simulate a Targeted Attack</div>
-          <p class="personal-cta-desc">
-            Test your password against a personalised dictionary generated from information
-            someone who knows you might use  names, birthdays, pets, and more.
-            All fields are optional. Nothing is sent anywhere.
-          </p>
-        </div>
-        <button id="show-personal-form-btn" class="btn-personal-run" aria-label="Run advanced personalized analysis">
-          Run Advanced Analysis
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 3: Profile form (hidden until button clicked) -->
-    <div id="personal-form-card" class="glass-card hidden personal-form-card">
-      <div class="personal-form-header">
-        <span class="personal-form-icon"></span>
-        <div>
-          <div class="personal-form-title">Enter Personal Information</div>
-          <div class="personal-form-subtitle">All fields are optional  fill in what you know.</div>
-        </div>
-      </div>
-
-      <div class="personal-form-grid">
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-first-name">First Name</label>
-          <input type="text" id="pa-first-name" class="personal-field-input" placeholder="e.g. Sanskar" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-last-name">Last Name</label>
-          <input type="text" id="pa-last-name" class="personal-field-input" placeholder="e.g. Phougat" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-nickname">Nickname</label>
-          <input type="text" id="pa-nickname" class="personal-field-input" placeholder="e.g. Sandy" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-username">Username</label>
-          <input type="text" id="pa-username" class="personal-field-input" placeholder="e.g. sanskar_01" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-dob">Date of Birth</label>
-          <input type="date" id="pa-dob" class="personal-field-input personal-field-date" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-partner">Partner's Name</label>
-          <input type="text" id="pa-partner" class="personal-field-input" placeholder="e.g. Priya" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-pet">Pet's Name</label>
-          <input type="text" id="pa-pet" class="personal-field-input" placeholder="e.g. Bruno" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <div class="personal-field-group">
-          <label class="personal-field-label" for="pa-company">Company Name</label>
-          <input type="text" id="pa-company" class="personal-field-input" placeholder="e.g. TechCorp" autocomplete="off" spellcheck="false" />
-        </div>
-
-      </div>
-
-      <div class="personal-form-actions">
-        <button id="run-personal-analysis-btn" class="btn-primary personal-generate-btn" aria-label="Generate dictionary and analyse">
-           Generate &amp; Analyse
-        </button>
-        <button id="cancel-personal-btn" class="btn-secondary" aria-label="Cancel">
-          Cancel
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading state -->
-    <div id="personal-loading-card" class="glass-card hidden personal-loading-card" aria-live="polite">
-      <div class="personal-loading-inner">
-        <div class="personal-spinner"></div>
-        <div class="personal-loading-text">
-          <div class="personal-loading-title">Generating personalised dictionary</div>
-          <div class="personal-loading-sub">Analysing name combinations, dates, and patterns</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 6: Results card -->
-    <div id="personal-results-card" class="glass-card hidden personal-results-card" aria-live="polite">
-
-      <!-- Top stat row -->
-      <div class="personal-stats-row">
-
-        <div class="personal-stat-card">
-          <div class="personal-stat-label">Dictionary Size</div>
-          <div class="personal-stat-value" id="pa-dict-size"></div>
-          <div class="personal-stat-sub">passwords generated</div>
-        </div>
-
-        <div class="personal-stat-card" id="pa-found-card">
-          <div class="personal-stat-label">Password Found</div>
-          <div class="personal-stat-value" id="pa-found"></div>
-          <div class="personal-stat-sub" id="pa-found-sub">in dictionary</div>
-        </div>
-
-        <div class="personal-stat-card" id="pa-rank-card">
-          <div class="personal-stat-label">Attack Rank</div>
-          <div class="personal-stat-value" id="pa-rank"></div>
-          <div class="personal-stat-sub">guess number</div>
-        </div>
-
-      </div>
-
-      <!-- Personal Attack Score bar -->
-      <div class="personal-score-section">
-        <div class="personal-score-header">
-          <span class="personal-score-label">Personalized Attack Resistance</span>
-          <span class="personal-score-value" id="pa-score-value"></span>
-        </div>
-        <div class="personal-score-track" role="progressbar" aria-label="Personal attack resistance score">
-          <div class="personal-score-fill" id="pa-score-fill"></div>
-        </div>
-      </div>
-
-      <!-- Risk level badge -->
-      <div class="personal-risk-row">
-        <span class="personal-risk-label">Risk Level</span>
-        <span class="personal-risk-badge" id="pa-risk-badge"></span>
-      </div>
-
-      <!-- Explanation list -->
-      <div class="personal-explanation" id="pa-explanation">
-        <div class="personal-explanation-title"> Analysis Details</div>
-        <ul class="personal-explanation-list" id="pa-explanation-list"></ul>
-      </div>
-
-      <!-- Actions -->
-      <div class="personal-results-actions">
-        <button id="download-dict-btn" class="btn-download-dict" aria-label="Download personalized dictionary as text file">
-          Download Dictionary
-        </button>
-        <button id="rerun-personal-btn" class="btn-secondary personal-rerun-btn" aria-label="Edit profile and re-run analysis">
-          ️ Edit &amp; Re-run
-        </button>
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- ── Smart Password Generator ─────────────────────────────────────────── -->
-  <section class="sg-section" id="smart-generator" aria-label="Smart password generator">
-    <div class="sg-header-row">
-      <div>
-        <h2 class="section-heading" style="margin-bottom:4px">Smart Password Generator</h2>
-        <p class="sg-subtitle">Memorable, secure passwords — edit freely and see live analysis</p>
-      </div>
-      <span class="sg-privacy-badge">Local Only</span>
-    </div>
-
-    <!-- Mode tabs + profile pill -->
-    <div class="sg-tabs-row">
-      <div class="sg-mode-tabs" role="tablist" aria-label="Generator mode">
-        <button class="sg-tab active" id="tab-memorable" role="tab" data-mode="smartMemorable"
-                aria-selected="true">Memorable</button>
-        <button class="sg-tab" id="tab-passphrase" role="tab" data-mode="passphrase"
-                aria-selected="false">Passphrase</button>
-        <button class="sg-tab" id="tab-max" role="tab" data-mode="maxSecurity"
-                aria-selected="false">Max Security</button>
-        <button class="sg-tab sg-tab--personal" id="tab-personal" role="tab" data-mode="personalSecure"
-                aria-selected="false">Personalized</button>
-      </div>
-      <span id="sg-profile-pill" class="sg-profile-pill" hidden>No profile</span>
-    </div>
-
-    <!-- Mode descriptions -->
-    <div class="sg-mode-desc" id="sg-mode-desc">
-      Title-cased words + number suffix &mdash; easy to type, hard to crack
-    </div>
-
-    <!-- Main card -->
-    <div class="sg-main-card glass-card">
-
-      <!-- Password output (EDITABLE) -->
-      <div class="sg-output-row">
-        <div class="sg-pw-wrap">
-          <label class="sg-pw-label" for="sg-password">Generated Password</label>
-          <input
-            type="text"
-            id="sg-password"
-            class="sg-pw-input"
-            placeholder="Click Generate…"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            aria-label="Generated password — editable"
-          />
-          <div class="sg-pw-hint">You can edit this password directly. Analysis updates live.</div>
-        </div>
-
-        <!-- Mini live score card -->
-        <div class="sg-score-card" id="sg-score-card" style="display:none">
-          <div class="sg-score-ring-wrap">
-            <svg width="76" height="76" viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="sg-ring-bg"   cx="60" cy="60" r="50"/>
-              <circle class="sg-ring-fill" id="sg-ring-fill" cx="60" cy="60" r="50"/>
-            </svg>
-            <div class="sg-score-center">
-              <span class="sg-score-val" id="sg-score-val">0</span>
-              <span class="sg-score-max">/100</span>
-            </div>
-          </div>
-          <div class="sg-score-meta">
-            <div class="sg-score-cat" id="sg-score-cat">—</div>
-            <div class="sg-score-stats">
-              <span id="sg-entropy">—</span> bits &middot; <span id="sg-length">0</span> chars
-            </div>
-            <div class="sg-crack-line" id="sg-crack-line"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Strength bar under input -->
-      <div class="sg-bar-track" id="sg-bar-track" style="display:none">
-        <div class="sg-bar-fill" id="sg-bar-fill"></div>
-      </div>
-
-      <!-- Action row -->
-      <div class="sg-actions">
-        <button class="sg-btn-primary" id="sg-generate-btn" aria-label="Generate new password">
-          Generate
-        </button>
-        <button class="sg-btn-secondary" id="sg-regen-btn" aria-label="Regenerate password" style="display:none">
-          Regenerate
-        </button>
-        <button class="sg-btn-secondary" id="sg-copy-btn" aria-label="Copy password" style="display:none">
-          Copy
-        </button>
-        <button class="sg-btn-ghost" id="sg-analyse-btn" aria-label="Send to main analyser" style="display:none">
-          Analyse in detail &darr;
-        </button>
-      </div>
-
-      <!-- Warning badge (shown live when user edits to expose personal data) -->
-      <div id="sg-warning-badge" class="sg-warning-badge" hidden></div>
-
-      <!-- Explainability panel (Personalized mode) -->
-      <div id="sg-explain-panel" class="sg-explain-panel" hidden>
-        <div class="sg-explain-title">Password Analysis</div>
-        <div class="sg-explain-grid">
-          <div class="sg-explain-row">
-            <span class="sg-explain-label">Strength Score</span>
-            <span class="sg-explain-value" id="sg-explain-strength">—</span>
-          </div>
-          <div class="sg-explain-row">
-            <span class="sg-explain-label">Personal Attack Score</span>
-            <span class="sg-explain-value" id="sg-explain-personal">—</span>
-          </div>
-        </div>
-        <div class="sg-explain-reason" id="sg-explain-reason">—</div>
-      </div>
-
-    </div><!-- /sg-main-card -->
-
-    <!-- Personalized profile form (collapsed, shown only in Personal mode) -->
-    <div id="sg-personal-form" class="sg-personal-form" hidden>
-      <div class="sg-pf-header">
-        <span class="sg-pf-title">Your Profile</span>
-        <span class="sg-pf-hint">Stored locally. Used as memory anchors only — never embedded directly.</span>
-      </div>
-      <div class="sg-pf-grid">
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-first-name">First Name</label>
-          <input type="text" id="sgp-first-name" class="sg-pf-input" placeholder="e.g. Sanskar" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-last-name">Last Name</label>
-          <input type="text" id="sgp-last-name" class="sg-pf-input" placeholder="e.g. Phougat" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-nickname">Nickname</label>
-          <input type="text" id="sgp-nickname" class="sg-pf-input" placeholder="e.g. San" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-pet">Pet Name</label>
-          <input type="text" id="sgp-pet" class="sg-pf-input" placeholder="e.g. Bruno" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-partner">Partner Name</label>
-          <input type="text" id="sgp-partner" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-company">Company / School</label>
-          <input type="text" id="sgp-company" class="sg-pf-input" placeholder="Optional" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-dob">Date of Birth</label>
-          <input type="date" id="sgp-dob" class="sg-pf-input" />
-        </div>
-        <div class="sg-pf-field">
-          <label class="sg-pf-label" for="sgp-fav-num">Favourite Number</label>
-          <input type="text" id="sgp-fav-num" class="sg-pf-input" placeholder="e.g. 7" autocomplete="off" />
-        </div>
-        <div class="sg-pf-field sg-pf-field--wide">
-          <label class="sg-pf-label" for="sgp-keywords">Custom Keywords <span class="sg-pf-hint-inline">(comma-separated)</span></label>
-          <input type="text" id="sgp-keywords" class="sg-pf-input" placeholder="e.g. cricket, physics" autocomplete="off" />
-        </div>
-      </div>
-      <div class="sg-pf-actions">
-        <button class="sg-pf-save-btn" id="sgp-save-btn">Save Profile</button>
-        <button class="sg-pf-clear-btn" id="sgp-clear-btn">Clear</button>
-      </div>
-      <div class="sg-pf-privacy">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Profile saved in your browser only. Never transmitted anywhere.
-      </div>
-    </div><!-- /sg-personal-form -->
-
-    <!-- Customisation panel (collapsible) -->
-    <div class="sg-custom-wrap">
-      <button class="sg-custom-toggle" id="sg-custom-toggle" aria-expanded="false">
-        Customise <span class="sg-caret" id="sg-custom-caret">&#9660;</span>
-      </button>
-      <div class="sg-custom-panel" id="sg-custom-panel" hidden>
-
-        <div class="sg-custom-grid">
-
-          <!-- Word count (Memorable + Passphrase only) -->
-          <div class="sg-custom-field" id="sg-wc-field">
-            <label class="sg-custom-label" for="sg-word-count">Word Count</label>
-            <div class="sg-slider-row">
-              <input type="range" id="sg-word-count" min="2" max="5" value="3" aria-label="Word count"/>
-              <span class="sg-slider-val" id="sg-wc-val">3</span>
-            </div>
-          </div>
-
-          <!-- Separator -->
-          <div class="sg-custom-field" id="sg-sep-field">
-            <label class="sg-custom-label">Separator</label>
-            <div class="sg-sep-group" role="group" aria-label="Word separator">
-              <button class="sg-sep-btn active" data-sep="">None</button>
-              <button class="sg-sep-btn" data-sep="-">  -  </button>
-              <button class="sg-sep-btn" data-sep="_">  _  </button>
-              <button class="sg-sep-btn" data-sep=".">  .  </button>
-            </div>
-          </div>
-
-          <!-- Numbers toggle -->
-          <div class="sg-custom-field">
-            <label class="sg-custom-label" for="sg-use-nums">Include Numbers</label>
-            <label class="sg-toggle">
-              <input type="checkbox" id="sg-use-nums" checked />
-              <span class="sg-toggle-track"></span>
-            </label>
-          </div>
-
-          <!-- Symbols toggle -->
-          <div class="sg-custom-field">
-            <label class="sg-custom-label" for="sg-use-syms">Include Symbol</label>
-            <label class="sg-toggle">
-              <input type="checkbox" id="sg-use-syms" />
-              <span class="sg-toggle-track"></span>
-            </label>
-          </div>
-
-          <!-- Capitalize toggle (Memorable only) -->
-          <div class="sg-custom-field" id="sg-caps-field">
-            <label class="sg-custom-label" for="sg-capitalize">Capitalize Words</label>
-            <label class="sg-toggle">
-              <input type="checkbox" id="sg-capitalize" checked />
-              <span class="sg-toggle-track"></span>
-            </label>
-          </div>
-
-          <!-- Category (Memorable only) -->
-          <div class="sg-custom-field" id="sg-cat-field">
-            <label class="sg-custom-label" for="sg-category">Word Theme</label>
-            <select id="sg-category" class="sg-select">
-              <option value="">Any</option>
-              <option value="tech">Technology</option>
-              <option value="space">Space</option>
-              <option value="nature">Nature</option>
-              <option value="animals">Animals</option>
-              <option value="science">Science</option>
-              <option value="fantasy">Fantasy</option>
-              <option value="general">General</option>
-            </select>
-          </div>
-
-        </div><!-- /sg-custom-grid -->
-      </div><!-- /sg-custom-panel -->
-    </div><!-- /sg-custom-wrap -->
-
-    <!-- Hidden legacy ids so app.js doesn't break -->
-    <input type="hidden" id="gen-length"  value="20" />
-    <input type="hidden" id="gen-lower"   />
-    <input type="hidden" id="gen-upper"   />
-    <input type="hidden" id="gen-digits"  />
-    <input type="hidden" id="gen-symbols" />
-    <textarea id="gen-output" style="display:none" readonly></textarea>
-    <button   id="gen-btn"      style="display:none"></button>
-    <button   id="gen-copy-btn" style="display:none"></button>
-    <button   id="gen-use-btn"  style="display:none"></button>
-    <span     id="gen-length-display" style="display:none"></span>
-
-  </section>
-
-  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
-  <footer class="site-footer">
-    <p>
-      PassGuard runs entirely in your browser &mdash; your password is <strong>never sent anywhere</strong>.
-      Open the browser console and run <code>runTests()</code> to see built-in test cases.
+<!-- ── Features ─────────────────────────────────────────────── -->
+<section class="dash-section" id="features" aria-labelledby="features-title">
+  <div class="pg-container">
+    <div class="dash-section-label">Platform</div>
+    <h2 class="dash-section-title" id="features-title">Everything you need to understand password security</h2>
+    <p class="dash-section-subtitle pg-mb-8">
+      Six integrated tools that work together to give you a complete view of your password's real-world security.
     </p>
-  </footer>
 
-</div><!-- /page-wrapper -->
+    <div class="pg-feature-grid pg-stagger">
 
-<!-- ES Module entry points -->
-<script type="module" src="app.js"></script>
-<script type="module" src="smartGeneratorUI.js"></script>
+      <div class="pg-feature-card">
+        <div class="pg-feature-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="pg-feature-title">Password Analyzer</div>
+        <div class="pg-feature-desc">Entropy calculation, pattern detection, common wordlist checking, username similarity, and brute-force crack time — all in one report.</div>
+        <a href="/app/analyzer.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Open Analyzer</a>
+      </div>
+
+      <div class="pg-feature-card">
+        <div class="pg-feature-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="pg-feature-title">Smart Password Generator</div>
+        <div class="pg-feature-desc">Four generation modes: Memorable, Passphrase, Max Security, and Personalized. Live strength analysis as you edit.</div>
+        <a href="/app/generator.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Open Generator</a>
+      </div>
+
+      <div class="pg-feature-card" style="border-color: var(--danger-border);">
+        <div class="pg-feature-icon" style="background:var(--danger-subtle);border-color:var(--danger-border);color:var(--danger)" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="pg-feature-title">Personalized Attack Lab</div>
+        <div class="pg-feature-desc">Generate a dictionary from your personal details — names, dates, pets — and test your password against it. Simulates how a targeted attacker thinks.</div>
+        <a href="/app/attack-lab.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Open Attack Lab</a>
+      </div>
+
+      <div class="pg-feature-card">
+        <div class="pg-feature-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="pg-feature-title">Security Profile</div>
+        <div class="pg-feature-desc">Store memory anchors locally. Used by the generator and attack lab to produce personalized results. Never transmitted anywhere.</div>
+        <a href="/app/profile.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Manage Profile</a>
+      </div>
+
+      <div class="pg-feature-card">
+        <div class="pg-feature-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="pg-feature-title">Password Academy</div>
+        <div class="pg-feature-desc">Learn password security concepts: entropy, attack types, passphrases, MFA, credential stuffing, and best practices. With interactive visualizations.</div>
+        <a href="/app/academy.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Start Learning</a>
+      </div>
+
+      <div class="pg-feature-card">
+        <div class="pg-feature-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="pg-feature-title">Browser Extension</div>
+        <div class="pg-feature-desc">Analyzes passwords inline on any website. Detects signup vs login context. Generator available on account creation pages. Shadow DOM isolated.</div>
+        <a href="/app/extension.html" class="pg-btn pg-btn--ghost pg-btn--sm" style="margin-top:16px">Learn More</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ──────────────────────────────────────────── -->
+<section class="dash-section dash-section--alt" id="how-it-works" aria-labelledby="how-title">
+  <div class="pg-container">
+    <div class="dash-section-label">Process</div>
+    <h2 class="dash-section-title" id="how-title">How PassGuard works</h2>
+    <p class="dash-section-subtitle pg-mb-10">
+      Every analysis runs a multi-layer pipeline locally in your browser.
+    </p>
+
+    <div class="pg-steps">
+      <div class="pg-step">
+        <div class="pg-step__num">1</div>
+        <div class="pg-step__title">Input</div>
+        <div class="pg-step__desc">Enter a password. Optionally add your username, or run the personalized attack with profile data. Nothing leaves your device.</div>
+      </div>
+      <div class="pg-step">
+        <div class="pg-step__num">2</div>
+        <div class="pg-step__title">Analysis Pipeline</div>
+        <div class="pg-step__desc">Six modules run in parallel: strength, patterns, wordlist, username similarity, brute-force time, and personalized dictionary scoring.</div>
+      </div>
+      <div class="pg-step">
+        <div class="pg-step__num">3</div>
+        <div class="pg-step__title">Composite Score</div>
+        <div class="pg-step__desc">A weighted composite score (0–100) is calculated, combining all signals. Each component is shown transparently in the breakdown.</div>
+      </div>
+      <div class="pg-step">
+        <div class="pg-step__num">4</div>
+        <div class="pg-step__title">Recommendations</div>
+        <div class="pg-step__desc">Specific, actionable suggestions are generated based on detected weaknesses — not generic advice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Security stats ────────────────────────────────────────── -->
+<section class="dash-section" id="stats" aria-labelledby="stats-title">
+  <div class="pg-container">
+    <div class="dash-section-label">Why it matters</div>
+    <h2 class="dash-section-title" id="stats-title">Password security by the numbers</h2>
+    <p class="dash-section-subtitle pg-mb-10">Real statistics that make the case for strong password hygiene.</p>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--sp-4);">
+      <div class="pg-card" style="text-align:center">
+        <div class="dash-stat-big" style="color:var(--danger)">81%</div>
+        <div class="pg-feature-title" style="margin-top:8px">of breaches</div>
+        <div class="pg-feature-desc">involve stolen or weak passwords</div>
+        <div class="dash-stat-source">Verizon DBIR 2023</div>
+      </div>
+      <div class="pg-card" style="text-align:center">
+        <div class="dash-stat-big" style="color:var(--warning)">123456</div>
+        <div class="pg-feature-title" style="margin-top:8px">most common password</div>
+        <div class="pg-feature-desc">Used by over 4.5 million accounts in leaked databases</div>
+        <div class="dash-stat-source">NordPass 2023</div>
+      </div>
+      <div class="pg-card" style="text-align:center">
+        <div class="dash-stat-big" style="color:var(--success)">3 sec</div>
+        <div class="pg-feature-title" style="margin-top:8px">to crack 6-char passwords</div>
+        <div class="pg-feature-desc">An 8-char password with full charset takes centuries</div>
+        <div class="dash-stat-source">Based on bcrypt calculations</div>
+      </div>
+      <div class="pg-card" style="text-align:center">
+        <div class="dash-stat-big" style="color:var(--brand-hover)">65%</div>
+        <div class="pg-feature-title" style="margin-top:8px">password reuse rate</div>
+        <div class="pg-feature-desc">of people use the same password across multiple sites</div>
+        <div class="dash-stat-source">Google/Harris Poll 2019</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture preview ──────────────────────────────────── -->
+<section class="dash-section dash-section--alt" id="architecture" aria-labelledby="arch-title">
+  <div class="pg-container">
+    <div class="dash-section-label">Architecture</div>
+    <h2 class="dash-section-title" id="arch-title">Platform overview</h2>
+    <p class="dash-section-subtitle pg-mb-8">Six tools built on a shared analysis engine. All offline.</p>
+
+    <div class="dash-arch-flow" role="list" aria-label="Platform components">
+      <div class="dash-arch-node dash-arch-node--active" role="listitem">
+        <div style="font-size:1.25rem;color:var(--brand)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Analyzer</div>
+        <div class="dash-arch-node__sub">Strength · Entropy</div>
+      </div>
+      <div class="dash-arch-arrow" aria-hidden="true">›</div>
+      <div class="dash-arch-node" role="listitem">
+        <div style="font-size:1.25rem;color:var(--text-muted)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Generator</div>
+        <div class="dash-arch-node__sub">4 Modes</div>
+      </div>
+      <div class="dash-arch-arrow" aria-hidden="true">›</div>
+      <div class="dash-arch-node" role="listitem">
+        <div style="font-size:1.25rem;color:var(--danger)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Attack Lab</div>
+        <div class="dash-arch-node__sub">Personal Dict.</div>
+      </div>
+      <div class="dash-arch-arrow" aria-hidden="true">›</div>
+      <div class="dash-arch-node" role="listitem">
+        <div style="font-size:1.25rem;color:var(--text-muted)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Profile</div>
+        <div class="dash-arch-node__sub">Local Storage</div>
+      </div>
+      <div class="dash-arch-arrow" aria-hidden="true">›</div>
+      <div class="dash-arch-node" role="listitem">
+        <div style="font-size:1.25rem;color:var(--text-muted)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Academy</div>
+        <div class="dash-arch-node__sub">Education</div>
+      </div>
+      <div class="dash-arch-arrow" aria-hidden="true">›</div>
+      <div class="dash-arch-node" role="listitem">
+        <div style="font-size:1.25rem;color:var(--text-muted)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="dash-arch-node__label">Extension</div>
+        <div class="dash-arch-node__sub">Browser Widget</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Extension preview ─────────────────────────────────────── -->
+<section class="dash-section" id="extension" aria-labelledby="ext-title">
+  <div class="pg-container">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-12); align-items:center;">
+      <div>
+        <div class="dash-section-label">Browser Extension</div>
+        <h2 class="dash-section-title" id="ext-title">Analysis inline on every website</h2>
+        <p class="pg-body-lg pg-mb-6">
+          The PassGuard extension injects a non-intrusive analyzer widget directly below password fields — on every website, without sending a single byte to any server.
+        </p>
+        <div class="pg-checklist">
+          <div class="pg-check-item">
+            <div class="pg-check-icon pg-check-icon--ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div><div class="pg-check-title">Detects login vs signup context</div></div>
+          </div>
+          <div class="pg-check-item">
+            <div class="pg-check-icon pg-check-icon--ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div><div class="pg-check-title">Password generator on signup pages</div></div>
+          </div>
+          <div class="pg-check-item">
+            <div class="pg-check-icon pg-check-icon--ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div><div class="pg-check-title">Shadow DOM — zero style conflicts</div></div>
+          </div>
+          <div class="pg-check-item">
+            <div class="pg-check-icon pg-check-icon--ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div><div class="pg-check-title">Personalized attack score inline</div></div>
+          </div>
+        </div>
+        <a href="/app/extension.html" class="pg-btn pg-btn--secondary" style="margin-top:var(--sp-6)">Extension Details</a>
+      </div>
+
+      <!-- Widget mockup -->
+      <div class="dash-ext-preview">
+        <div class="pg-caption pg-mb-4" style="color:var(--text-muted)">Extension widget — appears below any password field</div>
+        <div class="dash-ext-widget">
+          <div class="dash-ext-row">
+            <span class="dash-ext-label">Very Strong</span>
+            <span class="dash-ext-score">91/100</span>
+          </div>
+          <div class="dash-ext-bar-track">
+            <div class="dash-ext-bar-fill" style="width:91%"></div>
+          </div>
+          <div class="dash-ext-chips">
+            <div class="dash-ext-chip dash-ext-chip--on">a-z</div>
+            <div class="dash-ext-chip dash-ext-chip--on">A-Z</div>
+            <div class="dash-ext-chip dash-ext-chip--on">0-9</div>
+            <div class="dash-ext-chip dash-ext-chip--on">!@#</div>
+          </div>
+          <div class="dash-ext-row" style="margin-bottom:6px">
+            <span style="font-size:10px;color:#475569">Targeted Risk Analysis</span>
+            <span style="font-size:10px;color:#4ade80;font-weight:700">Resistant</span>
+          </div>
+          <div class="dash-ext-issues">
+            <span class="dash-ext-issue">No Special Pattern</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Academy teaser ────────────────────────────────────────── -->
+<section class="dash-section dash-section--alt" id="academy" aria-labelledby="academy-title">
+  <div class="pg-container">
+    <div class="dash-section-label">Password Academy</div>
+    <h2 class="dash-section-title" id="academy-title">Learn. Not just analyze.</h2>
+    <p class="dash-section-subtitle pg-mb-8">
+      PassGuard is both a tool and a learning platform. Understand why passwords are weak — not just that they are.
+    </p>
+
+    <div class="pg-feature-grid pg-stagger">
+      <a href="/app/academy.html#fundamentals" class="pg-feature-card" style="text-decoration:none">
+        <div class="pg-feature-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+        <div class="pg-feature-title">Password Fundamentals</div>
+        <div class="pg-feature-desc">What makes a password secure? Authentication, authorization, and the most common mistakes.</div>
+      </a>
+      <a href="/app/academy.html#attacks" class="pg-feature-card" style="text-decoration:none">
+        <div class="pg-feature-icon" style="background:var(--danger-subtle);border-color:var(--danger-border);color:var(--danger)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="pg-feature-title">Attack Types</div>
+        <div class="pg-feature-desc">Brute force, dictionary, credential stuffing, personalized attacks — how each works and how to defend against them.</div>
+      </a>
+      <a href="/app/academy.html#passphrases" class="pg-feature-card" style="text-decoration:none">
+        <div class="pg-feature-icon" style="background:var(--success-subtle);border-color:var(--success-border);color:var(--success)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="pg-feature-title">Passphrases & Best Practices</div>
+        <div class="pg-feature-desc">Why four random words beat a complex 8-character password. Entropy comparisons, password managers, and MFA.</div>
+      </a>
+      <a href="/app/academy.html#interactive" class="pg-feature-card" style="text-decoration:none">
+        <div class="pg-feature-icon" style="background:var(--warning-subtle);border-color:var(--warning-border);color:var(--warning)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        <div class="pg-feature-title">Interactive Simulations</div>
+        <div class="pg-feature-desc">Visualize entropy, simulate dictionary attacks, and see how crack time scales with password length in real time.</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Privacy ───────────────────────────────────────────────── -->
+<section class="dash-section" id="privacy" aria-labelledby="privacy-title">
+  <div class="pg-container">
+    <div class="dash-privacy">
+      <div>
+        <div class="dash-section-label">Privacy</div>
+        <h2 class="dash-section-title" id="privacy-title">Designed to never see your passwords</h2>
+        <p class="pg-body pg-mb-6">
+          Every analysis module runs locally in your browser. No servers, no analytics, no logging, no accounts. Your password never leaves your device.
+        </p>
+
+        <div class="dash-privacy-point">
+          <div class="dash-privacy-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="pg-check-title">All computation is local</div>
+            <div class="pg-check-desc">ES modules run in your browser — no API calls, no CDN tracking</div>
+          </div>
+        </div>
+        <div class="dash-privacy-point">
+          <div class="dash-privacy-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="pg-check-title">Profile data stays in your browser</div>
+            <div class="pg-check-desc">Stored in <code>localStorage</code>. Never synced, never transmitted</div>
+          </div>
+        </div>
+        <div class="dash-privacy-point">
+          <div class="dash-privacy-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="pg-check-title">Open source</div>
+            <div class="pg-check-desc">Inspect every analysis module. No obfuscation, no hidden logic</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="pg-card" style="padding:var(--sp-5);">
+          <div class="pg-section-title">Analysis modules run locally</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:var(--sp-3)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">strength.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">patterns.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">wordlist.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">personalDictionaryGenerator.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">bruteforce.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-raised);border-radius:6px;font-size:0.8125rem;">
+              <span style="color:var(--text-secondary)">scorer.js</span>
+              <span class="pg-badge pg-badge--success">Local</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────── -->
+<section class="dash-cta" id="cta" aria-labelledby="cta-title">
+  <div class="pg-container">
+    <h2 class="dash-cta__title" id="cta-title">Start analyzing your passwords</h2>
+    <p class="dash-cta__desc">
+      No sign-up. No data collection. No network requests. Just an honest security analysis of your password.
+    </p>
+    <div class="pg-hero__actions">
+      <a href="/app/analyzer.html" class="pg-btn pg-btn--primary pg-btn--lg">Open Password Analyzer</a>
+      <a href="/app/attack-lab.html" class="pg-btn pg-btn--secondary pg-btn--lg">Run Personalized Attack</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="pg-footer" aria-label="Site footer">
+  <div class="pg-container">
+    <div class="pg-footer__inner">
+      <div>
+        <div class="pg-footer__brand">PassGuard</div>
+        <div class="pg-footer__copy" style="margin-top:4px">
+          Password security platform. Fully offline. Open source.
+        </div>
+      </div>
+      <div class="pg-footer__links">
+        <a href="/app/analyzer.html"  class="pg-footer__link">Analyzer</a>
+        <a href="/app/generator.html" class="pg-footer__link">Generator</a>
+        <a href="/app/attack-lab.html" class="pg-footer__link">Attack Lab</a>
+        <a href="/app/academy.html"   class="pg-footer__link">Academy</a>
+        <a href="/app/extension.html" class="pg-footer__link">Extension</a>
+        <a href="/app/profile.html"   class="pg-footer__link">Profile</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+
+  // Accordion helper (for any pg-accordion on the page)
+  document.querySelectorAll('.pg-accordion-trigger').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.pg-accordion-item');
+      item.classList.toggle('open');
+    });
+  });
+</script>
 
 </body>
 </html>

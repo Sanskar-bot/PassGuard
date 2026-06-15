@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PassGuard Browser Extension — real-time password analysis inline on every website. Shadow DOM isolated, zero network requests, supports signup and login context detection." />
+  <title>Browser Extension — PassGuard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <link rel="stylesheet" href="platform.css" />
+  <style>
+    .ext-wrap { max-width: var(--content-max); margin-inline: auto; padding-inline: var(--sp-6); }
+
+    /* Widget mockup */
+    .ext-widget-mock {
+      background: #0d1424;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      width: 280px;
+      font-size: 13px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      flex-shrink: 0;
+    }
+    .ew-header   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .ew-brand    { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; }
+    .ew-score    { font-size: 13px; font-weight: 800; }
+    .ew-bar-track{ height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-bottom: 8px; }
+    .ew-bar-fill { height: 100%; border-radius: 2px; }
+    .ew-chips    { display: flex; gap: 4px; margin-bottom: 8px; }
+    .ew-chip     { flex: 1; text-align: center; padding: 3px 0; border-radius: 4px; font-size: 9px; font-weight: 800; font-family: monospace; border: 1px solid; }
+    .ew-chip--on { background: rgba(34,197,94,0.1);  border-color: rgba(34,197,94,0.3);  color: #4ade80; }
+    .ew-chip--off{ background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.15); color: rgba(239,68,68,0.5); }
+    .ew-row      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 10px; }
+    .ew-label    { color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ew-val      { font-weight: 800; }
+    .ew-issues   { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .ew-issue    { padding: 2px 7px; border-radius: 20px; font-size: 9px; font-weight: 700; }
+    .ew-divider  { height: 1px; background: rgba(255,255,255,0.05); margin: 7px 0; }
+    .ew-gen-btn  { width: 100%; padding: 6px; text-align: center; border-radius: 6px; font-size: 10px; font-weight: 800; background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3); color: #60a5fa; cursor: default; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    /* Step list */
+    .ext-steps { display: flex; flex-direction: column; gap: var(--sp-4); }
+    .ext-step  { display: flex; gap: var(--sp-4); }
+    .ext-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 0.8125rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .ext-step-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .ext-step-desc  { font-size: 0.875rem; color: var(--text-secondary); margin-top: 3px; line-height: 1.55; }
+
+    /* Privacy table */
+    .ext-privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+    .ext-privacy-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4); background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .ext-privacy-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--success-subtle); border: 1px solid var(--success-border); color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ext-privacy-title{ font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
+    .ext-privacy-desc { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+
+    /* Roadmap */
+    .ext-roadmap { display: flex; flex-direction: column; gap: var(--sp-3); }
+    .ext-road-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .ext-road-status { padding: 2px 8px; border-radius: 20px; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+    .ext-road-status--done    { background: var(--success-subtle); border: 1px solid var(--success-border); color: var(--success); }
+    .ext-road-status--active  { background: var(--brand-subtle);   border: 1px solid var(--brand-border);   color: var(--brand-hover); }
+    .ext-road-status--planned { background: var(--bg-raised);      border: 1px solid var(--border-medium);  color: var(--text-muted); }
+    .ext-road-title { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+    .ext-road-desc  { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 1px; }
+
+    @media (max-width: 640px) {
+      .ext-privacy-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="ext-wrap pg-page" style="padding-top: calc(var(--nav-h) + var(--sp-8))">
+
+  <!-- Page header -->
+  <div class="pg-page-header">
+    <div class="pg-page-header__eyebrow">Product</div>
+    <div class="pg-page-header__title">Browser Extension</div>
+    <div class="pg-page-header__desc">
+      Real-time password analysis inline on every website. Appears below password fields automatically.
+      No permissions to read your data. Shadow DOM isolated. Zero network requests.
+    </div>
+    <div class="pg-page-header__meta">
+      <span class="pg-badge pg-badge--success">Open Source</span>
+      <span class="pg-badge pg-badge--neutral">Chrome / Edge</span>
+      <span class="pg-badge pg-badge--brand">Manifest V3</span>
+    </div>
+  </div>
+
+  <!-- ── Hero: widget preview + feature list ─────────────── -->
+  <div class="pg-card pg-mb-8" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-8); align-items:center">
+    <div>
+      <div class="pg-section-title">What you see inline</div>
+      <p class="pg-body pg-mb-5">The widget appears automatically below any password field on any website — login forms, signup pages, account settings. It runs all of PassGuard's analysis engine locally and displays results without leaving the page.</p>
+      <div class="pg-checklist">
+        <div class="pg-check-item">
+          <div class="pg-check-icon pg-check-icon--ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><div class="pg-check-title">Compact, non-intrusive design</div></div>
+        </div>
+        <div class="pg-check-item">
+          <div class="pg-check-icon pg-check-icon--ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><div class="pg-check-title">Detects signup vs. login context</div></div>
+        </div>
+        <div class="pg-check-item">
+          <div class="pg-check-icon pg-check-icon--ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><div class="pg-check-title">Personalized attack score when profile saved</div></div>
+        </div>
+        <div class="pg-check-item">
+          <div class="pg-check-icon pg-check-icon--ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><div class="pg-check-title">Generator shown on signup pages</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Widget mockup -->
+    <div style="display:flex; justify-content:center; align-items:center; padding:var(--sp-4);">
+      <div class="ext-widget-mock" role="img" aria-label="Extension widget preview">
+        <div class="ew-header">
+          <span class="ew-brand">PassGuard</span>
+          <span class="ew-score" style="color:#22c55e">87/100</span>
+        </div>
+        <div class="ew-bar-track">
+          <div class="ew-bar-fill" style="width:87%;background:#22c55e"></div>
+        </div>
+        <div class="ew-chips">
+          <div class="ew-chip ew-chip--on">a–z</div>
+          <div class="ew-chip ew-chip--on">A–Z</div>
+          <div class="ew-chip ew-chip--on">0–9</div>
+          <div class="ew-chip ew-chip--off">!@#</div>
+        </div>
+        <div class="ew-row">
+          <span class="ew-label">Entropy</span>
+          <span class="ew-val" style="color:#94a3b8;font-family:monospace">52.4 bits</span>
+        </div>
+        <div class="ew-row">
+          <span class="ew-label">Crack Time</span>
+          <span class="ew-val" style="color:#22c55e">Centuries</span>
+        </div>
+        <div class="ew-row">
+          <span class="ew-label">Targeted Risk</span>
+          <span class="ew-val" style="color:#22c55e">Resistant</span>
+        </div>
+        <div class="ew-issues">
+          <span class="ew-issue" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#fcd34d">No Symbols</span>
+        </div>
+        <div class="ew-divider"></div>
+        <div class="ew-gen-btn">Generate Password</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Installation ────────────────────────────────────── -->
+  <div class="pg-card pg-mb-8">
+    <div class="pg-section-title">Installation</div>
+    <p class="pg-body-sm pg-mb-5">The extension is loaded as an unpacked extension during development. Chrome Web Store submission is on the roadmap.</p>
+
+    <div class="ext-steps">
+      <div class="ext-step">
+        <div class="ext-step-num">1</div>
+        <div>
+          <div class="ext-step-title">Clone the repository</div>
+          <div class="ext-step-desc">
+            <code>git clone https://github.com/Sanskar-bot/Password-analyzer.git</code><br/>
+            The extension source is in the <code>extension/</code> directory.
+          </div>
+        </div>
+      </div>
+      <div class="ext-step">
+        <div class="ext-step-num">2</div>
+        <div>
+          <div class="ext-step-title">Open Chrome Extensions</div>
+          <div class="ext-step-desc">Navigate to <code>chrome://extensions</code> in Chrome or Edge.</div>
+        </div>
+      </div>
+      <div class="ext-step">
+        <div class="ext-step-num">3</div>
+        <div>
+          <div class="ext-step-title">Enable Developer Mode</div>
+          <div class="ext-step-desc">Toggle "Developer mode" in the top-right corner of the extensions page.</div>
+        </div>
+      </div>
+      <div class="ext-step">
+        <div class="ext-step-num">4</div>
+        <div>
+          <div class="ext-step-title">Load Unpacked</div>
+          <div class="ext-step-desc">Click "Load unpacked" and select the <code>extension/</code> folder from the cloned repository.</div>
+        </div>
+      </div>
+      <div class="ext-step">
+        <div class="ext-step-num">5</div>
+        <div>
+          <div class="ext-step-title">Test on any site</div>
+          <div class="ext-step-desc">Navigate to any site with a password field (e.g. a login or signup page). The PassGuard widget will appear below the field automatically.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Architecture ────────────────────────────────────── -->
+  <div class="pg-card pg-mb-8">
+    <div class="pg-section-title">Technical Architecture</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-6)">
+      <div>
+        <h3 class="pg-h3 pg-mb-4" style="font-size:0.9375rem">How it works</h3>
+        <div class="ac-prose" style="font-size:0.875rem">
+          <p>The extension uses a <strong>content script</strong> (<code>content.js</code>) that runs on every page. It watches for password <code>&lt;input&gt;</code> fields using a MutationObserver and injects an analyzer widget when it finds one.</p>
+          <p>The widget is rendered inside a <strong>Shadow DOM</strong> host element, ensuring complete CSS isolation — the widget never inherits or pollutes the host page's styles.</p>
+          <p>All analysis logic runs synchronously in the content script context. The shared modules from <code>/shared/</code> are bundled directly — no message passing, no background worker, no server calls.</p>
+        </div>
+      </div>
+      <div>
+        <h3 class="pg-h3 pg-mb-4" style="font-size:0.9375rem">Key components</h3>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-raised);border-radius:var(--radius-sm);font-size:0.8125rem">
+            <span style="color:var(--text-secondary);font-family:var(--font-mono)">content.js</span>
+            <span class="pg-badge pg-badge--neutral">Content Script</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-raised);border-radius:var(--radius-sm);font-size:0.8125rem">
+            <span style="color:var(--text-secondary);font-family:var(--font-mono)">manifest.json</span>
+            <span class="pg-badge pg-badge--neutral">Manifest V3</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-raised);border-radius:var(--radius-sm);font-size:0.8125rem">
+            <span style="color:var(--text-secondary);font-family:var(--font-mono)">Shadow DOM</span>
+            <span class="pg-badge pg-badge--success">CSS Isolated</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-raised);border-radius:var(--radius-sm);font-size:0.8125rem">
+            <span style="color:var(--text-secondary);font-family:var(--font-mono)">MutationObserver</span>
+            <span class="pg-badge pg-badge--neutral">Dynamic detection</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-raised);border-radius:var(--radius-sm);font-size:0.8125rem">
+            <span style="color:var(--text-secondary);font-family:var(--font-mono)">localStorage</span>
+            <span class="pg-badge pg-badge--success">Profile Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Privacy ──────────────────────────────────────────── -->
+  <div class="pg-card pg-mb-8">
+    <div class="pg-section-title">Privacy by Design</div>
+    <div class="ext-privacy-grid">
+      <div class="ext-privacy-item">
+        <div class="ext-privacy-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="ext-privacy-title">No network requests</div>
+          <div class="ext-privacy-desc">The extension makes zero outbound network requests. There is no telemetry, no analytics, no CDN.</div>
+        </div>
+      </div>
+      <div class="ext-privacy-item">
+        <div class="ext-privacy-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="ext-privacy-title">No password reading</div>
+          <div class="ext-privacy-desc">The extension reads the password value only to analyze it locally. It never stores or transmits password values.</div>
+        </div>
+      </div>
+      <div class="ext-privacy-item">
+        <div class="ext-privacy-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="ext-privacy-title">Shadow DOM isolation</div>
+          <div class="ext-privacy-desc">The widget cannot access or modify the host page's DOM or JavaScript context beyond attaching its host element.</div>
+        </div>
+      </div>
+      <div class="ext-privacy-item">
+        <div class="ext-privacy-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="ext-privacy-title">Minimal permissions</div>
+          <div class="ext-privacy-desc">The manifest requests only <code>activeTab</code> and <code>storage</code> permissions — the minimum required to function.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Roadmap ──────────────────────────────────────────── -->
+  <div class="pg-card pg-mb-8">
+    <div class="pg-section-title">Roadmap</div>
+    <div class="ext-roadmap">
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--done">Shipped</div>
+        <div>
+          <div class="ext-road-title">Inline password analysis</div>
+          <div class="ext-road-desc">Strength score, entropy, crack time, issue chips, char class indicators</div>
+        </div>
+      </div>
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--done">Shipped</div>
+        <div>
+          <div class="ext-road-title">Password generator on signup pages</div>
+          <div class="ext-road-desc">Context-aware detection — generator tab only appears on account creation forms</div>
+        </div>
+      </div>
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--done">Shipped</div>
+        <div>
+          <div class="ext-road-title">Personalized attack score</div>
+          <div class="ext-road-desc">Shows targeted risk when a profile is saved in localStorage</div>
+        </div>
+      </div>
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--active">In Progress</div>
+        <div>
+          <div class="ext-road-title">Firefox support</div>
+          <div class="ext-road-desc">Manifest V3 compatibility for Firefox — nearly identical API surface</div>
+        </div>
+      </div>
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--planned">Planned</div>
+        <div>
+          <div class="ext-road-title">Chrome Web Store submission</div>
+          <div class="ext-road-desc">Public listing for one-click installation</div>
+        </div>
+      </div>
+      <div class="ext-road-item">
+        <div class="ext-road-status ext-road-status--planned">Planned</div>
+        <div>
+          <div class="ext-road-title">Breach check integration</div>
+          <div class="ext-road-desc">Check if an email/password has appeared in known breaches (k-anonymity model — no plaintext sent)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer CTA ──────────────────────────────────────── -->
+  <div class="pg-card" style="text-align:center;padding:var(--sp-10)">
+    <div class="pg-h3 pg-mb-4">Open source. Fully auditable.</div>
+    <p class="pg-body pg-mb-6" style="max-width:480px;margin-inline:auto">
+      Every line of the extension is in the <code>extension/</code> directory. Read the source, inspect the manifest, verify the permissions.
+    </p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:var(--sp-3);flex-wrap:wrap">
+      <a href="https://github.com/Sanskar-bot/Password-analyzer" class="pg-btn pg-btn--primary" target="_blank" rel="noopener">View on GitHub</a>
+      <a href="/app/analyzer.html" class="pg-btn pg-btn--secondary">Try the Web App</a>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { inject } from './nav.js';
+  inject();
+</script>
+
+</body>
+</html>
