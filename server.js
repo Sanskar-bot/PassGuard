@@ -43,6 +43,17 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
+  // Serve favicon.ico from the PNG (Chrome always requests /favicon.ico regardless of <link> tags)
+  if (pathname === "/favicon.ico") {
+    const faviconPath = path.join(ROOT, "app", "favicon.png");
+    fs.readFile(faviconPath, (err, data) => {
+      if (err) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+      res.end(data);
+    });
+    return;
+  }
+
   // Resolve to an absolute path and make sure it stays within ROOT
   const absPath = path.normalize(path.join(ROOT, pathname));
   if (!absPath.startsWith(ROOT)) {
