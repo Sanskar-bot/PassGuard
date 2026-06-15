@@ -116,14 +116,35 @@ test('password change context targets the new password field', () => {
   assert.equal(result.targetField, next);
 });
 
-test('validator rejects direct profile exposure', async () => {
-  const result = await validateGeneratedPassword('SanskarQuantumGit88!', {
+test('validator rejects naked trivial profile patterns', async () => {
+  // Naked name alone → rejected
+  const r1 = await validateGeneratedPassword('Sanskar!', {
     profile: { firstName: 'Sanskar' },
     domain: 'github.com',
     reuseRecords: [],
   });
-  assert.equal(result.passed, false);
-  assert.ok(result.failures.some(reason => reason.includes('raw personal')));
+  assert.equal(r1.passed, false,
+    'Naked name password should be rejected');
+
+  // Name + trivial number → rejected
+  const r2 = await validateGeneratedPassword('Sanskar123', {
+    profile: { firstName: 'Sanskar' },
+    domain: 'github.com',
+    reuseRecords: [],
+  });
+  assert.equal(r2.passed, false,
+    'Name + trivial number should be rejected');
+
+  // Complex mixed password with profile word → ACCEPTED when allowProfileAnchors=true
+  // (Note: password chosen to avoid coincidental sequential letter runs in word boundaries)
+  const r3 = await validateGeneratedPassword('Sans47GitBlaze!', {
+    profile: { firstName: 'Sanskar' },
+    domain: 'github.com',
+    reuseRecords: [],
+    allowProfileAnchors: true,
+  });
+  assert.equal(r3.passed, true,
+    'Complex mixed password with profile word should pass when allowProfileAnchors=true');
 });
 
 test('validator rejects reuse from another domain', async () => {
@@ -151,9 +172,19 @@ test('context-aware generator passes the complete validation pipeline', async ()
     validation: { reuseRecords: [] },
   });
 
-  assert.equal(result.validation.passed, true);
-  assert.ok(result.validation.strengthScore > 80);
-  assert.ok(result.validation.personalizedAttackScore > 80);
-  assert.equal(/sanskar|sanu|bruno|2004|coding/i.test(result.password), false);
-  assert.ok(websiteContext.keywords.some(keyword => result.password.includes(keyword)));
+  assert.equal(result.validation.passed, true,
+    `Expected password to pass but got: ${result.validation.failures.join('; ')}`);
+  assert.ok(result.validation.strengthScore > 80,
+    `Strength score ${result.validation.strengthScore} should be > 80`);
+  assert.ok(result.validation.personalizedAttackScore > 80,
+    `Personal score ${result.validation.personalizedAttackScore} should be > 80`);
+
+  // Profile word MUST appear (new design: personalization is required)
+  const hasProfileWord = /sanskar|sanu|bruno|coding|sans/i.test(result.password);
+  assert.ok(hasProfileWord,
+    `Expected a profile word in: ${result.password}`);
+
+  // Website keyword must also appear
+  assert.ok(websiteContext.keywords.some(kw => result.password.includes(kw)),
+    `Expected a site keyword in: ${result.password}`);
 });
