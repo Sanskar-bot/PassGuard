@@ -1,28 +1,31 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Analyze your password's strength with entropy calculation, pattern detection, wordlist checks, username similarity, and brute-force time estimation. Fully offline." />
-  <title>Password Analyzer — PassGuard</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M50 18l24 9v18c0 18-24 30-24 30S26 63 26 45V27z' fill='none' stroke='white' stroke-width='6' stroke-linejoin='round'/></svg>" />
+  <title>Password Analyzer â€” PassGuard</title>
+  <link rel="icon" href="/app/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/app/passguard_icon.png" />
+  <meta property="og:image" content="/app/passguard_logo.png" />
+  <meta name="theme-color" content="#0F172A" />
   <link rel="stylesheet" href="platform.css" />
   <link rel="stylesheet" href="style.css?v=5" />
   <style>
-    /* ── Analyzer page overrides ───────────────────────────────
+    /* â”€â”€ Analyzer page overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        These rules update style.css's neon palette to use
        the platform.css design tokens, keeping all JS class
        hooks intact while removing glow effects.
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-    /* Page wrapper — keep existing but update bg */
+    /* Page wrapper â€” keep existing but update bg */
     .page-wrapper {
       background: var(--bg-base);
       color: var(--text-primary);
       padding-top: var(--nav-h);
     }
 
-    /* Header hidden — replaced by pg-page-header */
+    /* Header hidden â€” replaced by pg-page-header */
     .site-header { display: none; }
 
     /* Input section */
@@ -33,7 +36,7 @@
       padding-top: var(--sp-8);
     }
 
-    /* Glass cards — update to platform tokens */
+    /* Glass cards â€” update to platform tokens */
     .glass-card {
       background: var(--bg-surface);
       border: 1px solid var(--border);
@@ -321,7 +324,7 @@
 
 <div class="page-wrapper">
 
-  <!-- ── Page header ─────────────────────────────────────────── -->
+  <!-- â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="az-layout">
     <div class="pg-page-header">
       <div class="pg-page-header__eyebrow">Tool</div>
@@ -337,7 +340,7 @@
     </div>
   </div>
 
-  <!-- ── Input section ───────────────────────────────────────── -->
+  <!-- â”€â”€ Input section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <section class="input-section" aria-label="Password input">
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);">
@@ -390,7 +393,7 @@
           />
         </div>
         <p style="margin-top:var(--sp-3);font-size:0.8125rem;color:var(--text-muted);line-height:1.5">
-          If provided, the analyzer checks whether your password is derived from or similar to your username — a common weak-password pattern.
+          If provided, the analyzer checks whether your password is derived from or similar to your username â€” a common weak-password pattern.
         </p>
         <div style="margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid var(--border-subtle)">
           <a href="/app/attack-lab.html" class="pg-btn pg-btn--ghost pg-btn--sm">
@@ -403,7 +406,7 @@
 
   </section>
 
-  <!-- ── Empty state ─────────────────────────────────────────── -->
+  <!-- â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="empty-state" class="az-layout" aria-live="polite">
     <div class="empty-state" style="padding:var(--sp-16);text-align:center;color:var(--text-muted)">
       <div class="empty-icon"></div>
@@ -411,7 +414,7 @@
     </div>
   </div>
 
-  <!-- ── Results ─────────────────────────────────────────────── -->
+  <!-- â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <section id="results-panel" class="hidden az-layout" aria-live="polite" aria-label="Analysis results">
 
     <!-- Row 1: Score ring + Breakdown -->
@@ -487,10 +490,10 @@
     </div>
   </section>
 
-  <!-- ── Personalized Attack section ───────────────────────────
+  <!-- â”€â”€ Personalized Attack section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        All IDs preserved so app.js continues to work.
        Visually redesigned but functionally identical.
-  ─────────────────────────────────────────────────────────── -->
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <section id="personal-attack-section" class="hidden personal-attack-section" aria-label="Personalized attack analysis">
 
     <h2 class="section-heading">Personalized Attack Analysis</h2>
@@ -503,7 +506,7 @@
           <div class="personal-cta-title">Simulate a Targeted Attack</div>
           <p class="personal-cta-desc">
             Test your password against a personalized dictionary generated from information someone
-            who knows you might use — names, birthdays, pets, and more.
+            who knows you might use â€” names, birthdays, pets, and more.
             All fields are optional. Nothing is sent anywhere.
           </p>
         </div>
@@ -520,7 +523,7 @@
         <span class="personal-form-icon" aria-hidden="true"></span>
         <div>
           <div class="personal-form-title">Personal Information</div>
-          <div class="personal-form-subtitle">All fields are optional — fill in what you know.</div>
+          <div class="personal-form-subtitle">All fields are optional â€” fill in what you know.</div>
         </div>
       </div>
 
@@ -632,15 +635,15 @@
 
   </section>
 
-  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <!-- â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <footer class="site-footer" aria-label="Page footer">
     <p>
-      PassGuard runs entirely in your browser — your password is <strong>never sent anywhere</strong>.
+      PassGuard runs entirely in your browser â€” your password is <strong>never sent anywhere</strong>.
       Open the console and run <code>runTests()</code> to see built-in test cases.
     </p>
   </footer>
 
-  <!-- Hidden legacy generator stubs — app.js queries these -->
+  <!-- Hidden legacy generator stubs â€” app.js queries these -->
   <input type="hidden" id="gen-length"        value="20" />
   <input type="hidden" id="gen-lower"         />
   <input type="hidden" id="gen-upper"         />
