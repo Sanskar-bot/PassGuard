@@ -20,6 +20,16 @@
   if (window.__vaultzeroInjected) return;
   window.__vaultzeroInjected = true;
 
+  // ── Extension context guard ────────────────────────────────────────────────
+  // After the extension is reloaded/updated, the old content script survives
+  // on existing tabs but chrome.runtime becomes invalid. Every chrome.* call
+  // will throw "Extension context invalidated". We check runtime.id first and
+  // silently abort any work that requires a live extension context.
+  function ctxValid() {
+    try { return !!chrome.runtime?.id; }
+    catch (_) { return false; }
+  }
+
   //  Settings 
   let settings = {
     enableWidget:       true,
@@ -28,16 +38,18 @@
     enableBadge:        true,
     widgetPosition:     'below',
   };
-  chrome.storage.sync.get('settings', (data) => {
-    if (data.settings) settings = { ...settings, ...data.settings };
-  });
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.settings) {
-      settings = { ...settings, ...changes.settings.newValue };
-      if (!settings.enableWidget) removeAllWidgets();
-      if (!settings.enableGenerator) removeAllGeneratorHosts();
-    }
-  });
+  try {
+    chrome.storage.sync.get('settings', (data) => {
+      if (data.settings) settings = { ...settings, ...data.settings };
+    });
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.settings) {
+        settings = { ...settings, ...changes.settings.newValue };
+        if (!settings.enableWidget)    removeAllWidgets();
+        if (!settings.enableGenerator) removeAllGeneratorHosts();
+      }
+    });
+  } catch (_) { /* context already invalidated on this tab */ }
 
   //  State 
   const widgetMap = new WeakMap();
@@ -46,22 +58,28 @@
   let contextModulesPromise = null;
 
   function getContextModules() {
+    if (!ctxValid()) return Promise.reject(new Error('Extension context invalidated'));
     if (!contextModulesPromise) {
-      contextModulesPromise = Promise.all([
-        import(chrome.runtime.getURL('modules/contextDetector.js')),
-        import(chrome.runtime.getURL('modules/websiteContext.js')),
-        import(chrome.runtime.getURL('modules/profilePasswordGenerator.js')),
-        import(chrome.runtime.getURL('modules/generatorValidator.js')),
-        import(chrome.runtime.getURL('modules/profileStore.js')),
-        import(chrome.runtime.getURL('modules/dictCache.js')),
-      ]).then(([detector, website, generator, validator, profileStore, dictCache]) => ({
-        detector, website, generator, validator, profileStore, dictCache,
-      })).catch((err) => {
-        // Clear so the next focus attempt retries the import chain
+      try {
+        contextModulesPromise = Promise.all([
+          import(chrome.runtime.getURL('modules/contextDetector.js')),
+          import(chrome.runtime.getURL('modules/websiteContext.js')),
+          import(chrome.runtime.getURL('modules/profilePasswordGenerator.js')),
+          import(chrome.runtime.getURL('modules/generatorValidator.js')),
+          import(chrome.runtime.getURL('modules/profileStore.js')),
+          import(chrome.runtime.getURL('modules/dictCache.js')),
+        ]).then(([detector, website, generator, validator, profileStore, dictCache]) => ({
+          detector, website, generator, validator, profileStore, dictCache,
+        })).catch((err) => {
+          // Clear so the next focus attempt retries the import chain
+          contextModulesPromise = null;
+          throw err;
+        });
+      } catch (err) {
+        // chrome.runtime.getURL() itself threw (context invalidated)
         contextModulesPromise = null;
-        console.warn('[VaultZero] Context module load failed:', err);
-        throw err;
-      });
+        return Promise.reject(err);
+      }
     }
     return contextModulesPromise;
   }
@@ -87,16 +105,86 @@
 
   function generatorCSS() {
     return `
-      *,*::before,*::after{box-sizing:border-box}
-      .panel{padding:10px;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e2e8f0;background:#0b1220;border:1px solid rgba(14,165,233,.35);border-radius:7px;box-shadow:0 8px 24px rgba(0,0,0,.52)}
-      .head,.scores,.actions{display:flex;align-items:center;gap:7px}
-      .head{margin-bottom:8px}.title{font-weight:750;flex:1}.context{font-size:10px;color:#7dd3fc}
-      .pw{width:100%;min-width:0;padding:8px 9px;border:1px solid #334155;border-radius:5px;background:#020617;color:#f8fafc;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
-      .pw:focus{border-color:#38bdf8}.scores{margin-top:7px;color:#94a3b8}.score{font-weight:750;color:#f8fafc}.ok{color:#4ade80}.bad{color:#f87171}
-      .reason{margin-top:6px;color:#94a3b8;font-size:11px}.actions{margin-top:9px;flex-wrap:wrap}
-      button{border:1px solid #334155;border-radius:5px;background:#172033;color:#e2e8f0;padding:6px 9px;font:600 11px inherit;cursor:pointer}
-      button:hover{border-color:#38bdf8}.primary{background:#0369a1;border-color:#0ea5e9;color:white}.apply{background:#166534;border-color:#22c55e;color:white}
-      button:disabled{opacity:.55;cursor:wait}
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      .vz-gen {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 13px;
+        background: rgba(8, 12, 24, 0.98);
+        border: 1px solid rgba(0, 212, 255, 0.28);
+        border-radius: 12px;
+        padding: 12px 14px 10px;
+        color: #e2e8f0;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,212,255,0.06) inset;
+        min-width: 320px;
+        transition: all 0.2s ease;
+      }
+
+      /* Header */
+      .vz-gen-head {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 10px;
+      }
+      .vz-gen-icon { color: rgba(0,212,255,0.75); flex-shrink: 0; display: flex; align-items: center; }
+      .vz-gen-title { flex: 1; font-weight: 750; font-size: 13px; color: #f1f5f9; }
+      .vz-gen-ctx {
+        font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+        background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+        color: #67e8f9; text-transform: uppercase; letter-spacing: 0.5px;
+      }
+      .vz-gen-ctx.change { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.25); color: #c4b5fd; }
+
+      /* Password field */
+      .vz-gen-pw {
+        width: 100%; padding: 9px 11px;
+        border: 1px solid #1e293b; border-radius: 7px;
+        background: #020617; color: #f8fafc;
+        font: 600 13px 'SF Mono', ui-monospace, Consolas, monospace;
+        outline: none; letter-spacing: 0.03em;
+        transition: border-color 0.2s;
+        margin-bottom: 9px;
+      }
+      .vz-gen-pw:focus { border-color: rgba(0,212,255,0.5); box-shadow: 0 0 0 2px rgba(0,212,255,0.08); }
+
+      /* Score bars */
+      .vz-gen-scores { display: none; margin-bottom: 9px; }
+      .vz-gen-scores.show { display: block; }
+      .vz-gen-score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+      .vz-gen-score-label { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;
+                             letter-spacing: 0.4px; width: 80px; flex-shrink: 0; }
+      .vz-gen-score-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+      .vz-gen-score-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease, background 0.3s; }
+      .vz-gen-score-num { font-size: 11px; font-weight: 800; width: 36px; text-align: right;
+                           font-variant-numeric: tabular-nums; flex-shrink: 0; }
+      .ok  { color: #4ade80; }
+      .warn{ color: #f59e0b; }
+      .bad { color: #f87171; }
+
+      /* Reasoning */
+      .vz-gen-reason {
+        font-size: 11px; color: #64748b; line-height: 1.5;
+        margin-bottom: 9px; padding: 0 1px;
+        min-height: 14px;
+      }
+      .vz-gen-reason.passed { color: #4ade80; }
+      .vz-gen-reason.failed { color: #f87171; }
+
+      /* Actions */
+      .vz-gen-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      button {
+        border-radius: 6px; padding: 6px 11px;
+        font: 600 11px inherit; cursor: pointer;
+        border: 1px solid #1e293b; background: #0f172a; color: #94a3b8;
+        transition: all 0.15s;
+      }
+      button:hover { border-color: rgba(0,212,255,0.4); color: #e2e8f0; }
+      button:disabled { opacity: 0.45; cursor: wait; }
+      .btn-primary { background: #0369a1; border-color: #0ea5e9; color: #fff; }
+      .btn-primary:hover { background: #0284c7; }
+      .btn-apply { background: #166534; border-color: #22c55e; color: #fff; }
+      .btn-apply:hover { background: #15803d; }
+      .btn-apply:disabled { background: #0f2b1a; border-color: #166534; }
     `;
   }
 
@@ -104,88 +192,142 @@
     if (generatorMap.has(context.targetField)) return;
 
     const target = context.targetField;
+    const isChange = context.type === 'password-change';
 
-    // Use fixed positioning (same strategy as the strength widget) so the panel
-    // is never clipped by host-page overflow:hidden / flex containers.
+    // Use fixed positioning — never clipped by host-page overflow:hidden containers.
     const host = document.createElement('div');
     host.className = '__vz-generator-host';
-    host.style.cssText = [
-      'position:fixed',
-      'z-index:2147483646',
-      'pointer-events:all',
-      'left:0',
-      'top:0',
-      'display:none',   // hidden until field is focused
-    ].join(';');
+    host.style.cssText = 'position:fixed;z-index:2147483646;pointer-events:all;left:0;top:0;display:none;';
     document.body.appendChild(host);
 
     function repositionGenerator() {
       const rect = target.getBoundingClientRect();
       if (rect.width === 0) return;
-      host.style.left  = `${rect.left}px`;
-      host.style.top   = `${rect.bottom + 6}px`;
-      const panel = shadow.querySelector('.panel');
-      if (panel) panel.style.width = `${Math.max(rect.width, 320)}px`;
+      host.style.left = `${rect.left}px`;
+      host.style.top  = `${rect.bottom + 6}px`;
+      const card = shadow.querySelector('.vz-gen');
+      if (card) card.style.width = `${Math.max(rect.width, 340)}px`;
     }
-
     window.addEventListener('scroll', repositionGenerator, { passive: true });
     window.addEventListener('resize', repositionGenerator, { passive: true });
 
     const shadow = host.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
       <style>${generatorCSS()}</style>
-      <section class="panel" aria-label="VaultZero password generator">
-        <div class="head">
-          <span class="title">Generate Password</span>
-          <span class="context">${websiteContext.brand} · ${context.type === 'password-change' ? 'Password change' : 'New account'}</span>
+      <div class="vz-gen" role="complementary" aria-label="VaultZero password generator">
+        <div class="vz-gen-head">
+          <span class="vz-gen-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <span class="vz-gen-title">Generate Password</span>
+          <span class="vz-gen-ctx ${isChange ? 'change' : ''}">${websiteContext.brand || 'New'} · ${isChange ? 'Password change' : 'New account'}</span>
         </div>
-        <input class="pw" type="text" autocomplete="off" spellcheck="false" aria-label="Generated password">
-        <div class="scores" hidden>
-          <span>Strength <b class="score strength">--</b></span>
-          <span>Personalized <b class="score personal">--</b></span>
-        </div>
-        <div class="reason">Generate a unique password for this account.</div>
-        <div class="actions">
-          <button class="primary generate">Generate</button>
-          <button class="regenerate" hidden>Regenerate</button>
-          <button class="copy" hidden>Copy</button>
-          <button class="analyze" hidden>Analyze</button>
-          <button class="apply" hidden>Use Password</button>
-        </div>
-      </section>`;
 
-    const elements = {
-      password: shadow.querySelector('.pw'),
-      scores: shadow.querySelector('.scores'),
-      strength: shadow.querySelector('.strength'),
-      personal: shadow.querySelector('.personal'),
-      reason: shadow.querySelector('.reason'),
-      generate: shadow.querySelector('.generate'),
-      regenerate: shadow.querySelector('.regenerate'),
-      copy: shadow.querySelector('.copy'),
-      analyze: shadow.querySelector('.analyze'),
-      apply: shadow.querySelector('.apply'),
+        <input class="vz-gen-pw" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Click Generate to create a strong password"
+               aria-label="Generated password" />
+
+        <div class="vz-gen-scores" aria-live="polite">
+          <div class="vz-gen-score-row">
+            <span class="vz-gen-score-label">Strength</span>
+            <div class="vz-gen-score-bar"><div class="vz-gen-score-fill str-fill" style="width:0%"></div></div>
+            <span class="vz-gen-score-num str-num">--</span>
+          </div>
+          <div class="vz-gen-score-row">
+            <span class="vz-gen-score-label">Personalized</span>
+            <div class="vz-gen-score-bar"><div class="vz-gen-score-fill per-fill" style="width:0%"></div></div>
+            <span class="vz-gen-score-num per-num">--</span>
+          </div>
+        </div>
+
+        <div class="vz-gen-reason">Generate a unique password for ${websiteContext.brand || 'this account'}.</div>
+
+        <div class="vz-gen-actions">
+          <button class="btn-primary btn-generate">Generate</button>
+          <button class="btn-regen" hidden>Regenerate</button>
+          <button class="btn-copy" hidden>Copy</button>
+          <button class="btn-analyze" hidden>Analyze</button>
+          <button class="btn-apply" hidden disabled>Use Password</button>
+        </div>
+      </div>`;
+
+    const el = {
+      pw:      shadow.querySelector('.vz-gen-pw'),
+      scores:  shadow.querySelector('.vz-gen-scores'),
+      strFill: shadow.querySelector('.str-fill'),
+      strNum:  shadow.querySelector('.str-num'),
+      perFill: shadow.querySelector('.per-fill'),
+      perNum:  shadow.querySelector('.per-num'),
+      reason:  shadow.querySelector('.vz-gen-reason'),
+      generate:shadow.querySelector('.btn-generate'),
+      regen:   shadow.querySelector('.btn-regen'),
+      copy:    shadow.querySelector('.btn-copy'),
+      analyze: shadow.querySelector('.btn-analyze'),
+      apply:   shadow.querySelector('.btn-apply'),
     };
-    const state = { host, shadow, target, confirmation: context.confirmationField, websiteContext, modules, elements, validation: null, repositionGenerator };
+
+    const state = { host, shadow, target, confirmation: context.confirmationField,
+                    websiteContext, modules, el, validation: null, repositionGenerator };
     generatorMap.set(target, state);
 
-    // Show/hide generator when the password field gains/loses focus
+    // ── Hide the strength widget while generator is open (they share the same position) ──
+    // The generator already shows live strength + personalized scores.
+    function suppressStrengthWidget(hide) {
+      const ws = widgetMap.get(target);
+      if (ws) ws.host.style.display = hide ? 'none' : '';
+    }
+
+    // Show/hide with the field's focus state
     target.addEventListener('focus', () => {
       host.style.display = '';
       repositionGenerator();
+      suppressStrengthWidget(true);
     });
     target.addEventListener('blur', () => {
-      // Small delay so clicks inside the generator panel are processed first
       setTimeout(() => {
-        if (!shadow.contains(document.activeElement)) host.style.display = 'none';
+        if (!shadow.activeElement && !shadow.contains(document.activeElement)) {
+          host.style.display = 'none';
+          suppressStrengthWidget(false);
+        }
       }, 250);
     });
-    // If already focused (rare but possible)
     if (document.activeElement === target) {
       host.style.display = '';
       repositionGenerator();
+      suppressStrengthWidget(true);
     }
 
+    // ── Score rendering ──────────────────────────────────────────────────────
+    function scoreColor(v) {
+      return v >= 80 ? '#4ade80' : v >= 55 ? '#f59e0b' : '#f87171';
+    }
+    function scoreClass(v) {
+      return v >= 80 ? 'ok' : v >= 55 ? 'warn' : 'bad';
+    }
+    function renderValidation(result) {
+      state.validation = result;
+      const s = result.strengthScore;
+      const p = result.personalizedAttackScore;
+      el.strFill.style.width      = `${s}%`;
+      el.strFill.style.background = scoreColor(s);
+      el.strNum.textContent       = s;
+      el.strNum.className         = `vz-gen-score-num ${scoreClass(s)}`;
+      el.perFill.style.width      = `${p}%`;
+      el.perFill.style.background = scoreColor(p);
+      el.perNum.textContent       = p;
+      el.perNum.className         = `vz-gen-score-num ${scoreClass(p)}`;
+      el.scores.classList.add('show');
+      el.reason.textContent       = result.reasoning;
+      el.reason.className         = `vz-gen-reason ${result.passed ? 'passed' : 'failed'}`;
+      el.apply.hidden   = false;
+      el.apply.disabled = !result.passed;
+      for (const b of [el.regen, el.copy, el.analyze]) b.hidden = false;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
     async function validationOptions() {
       const profile = await modules.profileStore.getProfile() || {};
       await modules.dictCache.warmCache();
@@ -194,28 +336,15 @@
         username: nearbyUsername(target),
         validation: {
           dictionaryLookup: modules.dictCache.lookup,
-          dictionarySize: modules.dictCache.getSize(),
+          dictionarySize:   modules.dictCache.getSize(),
         },
       };
     }
 
-    function renderValidation(result) {
-      state.validation = result;
-      elements.scores.hidden = false;
-      elements.strength.textContent = `${result.strengthScore}/100`;
-      elements.personal.textContent = `${result.personalizedAttackScore}/100`;
-      elements.strength.className = `score strength ${result.strengthScore > 80 ? 'ok' : 'bad'}`;
-      elements.personal.className = `score personal ${result.personalizedAttackScore > 80 ? 'ok' : 'bad'}`;
-      elements.reason.textContent = result.reasoning;
-      elements.apply.disabled = !result.passed;
-      for (const button of [elements.regenerate, elements.copy, elements.analyze, elements.apply]) button.hidden = false;
-    }
-
     async function analyzeCurrent() {
       const { profile, username, validation } = await validationOptions();
-      const result = await modules.validator.validateGeneratedPassword(elements.password.value, {
-        profile,
-        username,
+      const result = await modules.validator.validateGeneratedPassword(el.pw.value, {
+        profile, username,
         domain: websiteContext.domain,
         ...validation,
       });
@@ -223,50 +352,50 @@
     }
 
     async function generate() {
-      elements.generate.disabled = true;
-      elements.regenerate.disabled = true;
-      elements.reason.textContent = 'Generating and validating locally...';
+      el.generate.disabled = true;
+      el.regen.disabled    = true;
+      el.reason.textContent = 'Generating and validating locally…';
+      el.reason.className  = 'vz-gen-reason';
       try {
         const { profile, username, validation } = await validationOptions();
         const result = await modules.generator.generateContextAwarePassword({
-          profile,
-          websiteContext,
-          username,
-          validation,
+          profile, websiteContext, username, validation,
           options: { wordCount: 3, symbols: true },
         });
-        elements.password.value = result.password;
+        el.pw.value = result.password;
         renderValidation(result.validation);
       } catch (error) {
-        elements.reason.textContent = error.message || 'No candidate passed every check. Try again.';
+        el.reason.textContent = error.message || 'No candidate passed all checks — try again.';
+        el.reason.className   = 'vz-gen-reason failed';
       } finally {
-        elements.generate.disabled = false;
-        elements.regenerate.disabled = false;
+        el.generate.disabled = false;
+        el.regen.disabled    = false;
       }
     }
 
+    // ── Event wiring ─────────────────────────────────────────────────────────
     let editTimer = null;
-    elements.password.addEventListener('input', () => {
+    el.pw.addEventListener('input', () => {
       clearTimeout(editTimer);
-      editTimer = setTimeout(analyzeCurrent, 100);
+      editTimer = setTimeout(analyzeCurrent, 150);
     });
-    elements.generate.addEventListener('click', generate);
-    elements.regenerate.addEventListener('click', generate);
-    elements.analyze.addEventListener('click', analyzeCurrent);
-    elements.copy.addEventListener('click', async () => {
-      if (!elements.password.value) return;
-      await navigator.clipboard.writeText(elements.password.value);
-      elements.copy.textContent = 'Copied';
-      setTimeout(() => { elements.copy.textContent = 'Copy'; }, 1200);
+    el.generate.addEventListener('click', generate);
+    el.regen.addEventListener('click', generate);
+    el.analyze.addEventListener('click', analyzeCurrent);
+    el.copy.addEventListener('click', async () => {
+      if (!el.pw.value) return;
+      await navigator.clipboard.writeText(el.pw.value);
+      el.copy.textContent = 'Copied!';
+      setTimeout(() => { el.copy.textContent = 'Copy'; }, 1400);
     });
-    elements.apply.addEventListener('click', async () => {
+    el.apply.addEventListener('click', async () => {
       if (!state.validation?.passed) {
         await analyzeCurrent();
         if (!state.validation?.passed) return;
       }
-      dispatchFieldValue(target, elements.password.value);
-      if (state.confirmation) dispatchFieldValue(state.confirmation, elements.password.value);
-      await modules.validator.rememberPasswordSignature(elements.password.value, websiteContext.domain);
+      dispatchFieldValue(target, el.pw.value);
+      if (state.confirmation) dispatchFieldValue(state.confirmation, el.pw.value);
+      if (ctxValid()) await modules.validator.rememberPasswordSignature(el.pw.value, websiteContext.domain);
       target.focus();
     });
   }
@@ -277,6 +406,7 @@
   const CHANGE_PATH_RE = /\/(change[-_]?password|reset[-_]?password|update[-_]?password|forgot[-_]?password|set[-_]?password|recover|password[-_]?reset)/i;
 
   async function scanForContextualGenerators() {
+    if (!ctxValid()) return;
     try {
       const modules = await getContextModules();
       let context = modules.detector.detectPasswordContext(document);
@@ -299,13 +429,15 @@
         }
       }
 
-      chrome.runtime.sendMessage({
-        type: 'NEW_PASSWORD_CONTEXT',
-        context: modules.detector.serializePasswordContext(context),
-        isNewPassword: context.eligible,
-        url: window.location.hostname,
-        websiteContext,
-      }).catch(() => {});
+      if (ctxValid()) {
+        chrome.runtime.sendMessage({
+          type: 'NEW_PASSWORD_CONTEXT',
+          context: modules.detector.serializePasswordContext(context),
+          isNewPassword: context.eligible,
+          url: window.location.hostname,
+          websiteContext,
+        }).catch(() => {});
+      }
 
       if (!settings.enableGenerator || !context.eligible || !context.targetField) {
         removeAllGeneratorHosts();
@@ -313,7 +445,8 @@
       }
       buildGeneratorHost(context.targetField, context, websiteContext, modules);
     } catch (error) {
-      console.warn('[VaultZero] Context generator failed:', error);
+      if (!String(error).includes('context invalidated'))
+        console.warn('[VaultZero] Context generator failed:', error);
     }
   }
 
@@ -328,29 +461,32 @@
   let vzDictLoading = false;
 
   async function loadDictCache() {
-    if (vzDictReady || vzDictLoading) return;
+    if (vzDictReady || vzDictLoading || !ctxValid()) return;
     vzDictLoading = true;
     try {
       const cache = await import(chrome.runtime.getURL('modules/dictCache.js'));
       await cache.warmCache();
       vzDictLookup = cache.lookup;
       vzDictReady  = true;
-      chrome.runtime.onMessage.addListener((msg) => {
-        if (msg.type === 'DICT_UPDATED') {
-          cache.invalidate();
-          vzDictReady = false; vzDictLoading = false;
-          loadDictCache();
-        }
-      });
+      if (ctxValid()) {
+        chrome.runtime.onMessage.addListener((msg) => {
+          if (msg.type === 'DICT_UPDATED') {
+            cache.invalidate();
+            vzDictReady = false; vzDictLoading = false;
+            loadDictCache();
+          }
+        });
+      }
     } catch (e) {
-      console.warn('[VaultZero] dictCache load failed:', e);
+      if (!String(e).includes('context invalidated'))
+        console.warn('[VaultZero] dictCache load failed:', e);
     } finally {
       vzDictLoading = false;
     }
   }
 
   async function loadModules() {
-    if (analysisReady) return;
+    if (analysisReady || !ctxValid()) return;
     try {
       const [strength, patterns, wordlist, username, bruteforce, scorer] = await Promise.all([
         import(chrome.runtime.getURL('modules/strength.js')),
@@ -368,7 +504,8 @@
       computeScore       = scorer.computeScore;
       analysisReady      = true;
     } catch (e) {
-      console.warn('[VaultZero] Module load failed:', e);
+      if (!String(e).includes('context invalidated'))
+        console.warn('[VaultZero] Module load failed:', e);
     }
   }
 
@@ -466,6 +603,13 @@
     let pollInterval = null;
 
     input.addEventListener('focus', () => {
+      // Suppress strength widget when generator panel is covering this field
+      if (generatorMap.has(input)) {
+        const gs = generatorMap.get(input);
+        gs.host.style.display = '';
+        gs.repositionGenerator();
+        return; // don't show strength widget — generator handles live analysis
+      }
       showWidget();
       loadDictCache();
       scanForContextualGenerators();
@@ -485,8 +629,6 @@
     });
 
     // BUG FIX: If the field is already focused when the widget is injected
-    // (e.g. user clicked the password field before page fully loaded),
-    // show the widget and start polling immediately.
     if (document.activeElement === input) {
       showWidget();
       loadDictCache();
