@@ -634,11 +634,11 @@
           rank <= 1000 ? ['High Risk',     'bad']  :
           rank <= 5000 ? ['Medium Risk',   'warn'] :
                          ['Low Risk',      'warn'];
-        persScoreEl.textContent = `🎯 Personalized: ${risk}`;
+        persScoreEl.textContent = `Targeted Risk: ${risk}`;
         persScoreEl.className   = `vz-pers-score ${cls}`;
         persLabelEl.textContent = `Guess #${rank.toLocaleString()}`;
       } else {
-        persScoreEl.textContent = '🎯 Personalized: Resistant';
+        persScoreEl.textContent = 'Personalized Analysis: Resistant';
         persScoreEl.className   = 'vz-pers-score ok';
         persLabelEl.textContent = 'Not in attack profile';
       }
@@ -664,14 +664,13 @@
     const issuesSection = shadow.querySelector('.vz-issues-section');
     const issuesList    = shadow.querySelector('.vz-issues-list');
     if (issues.length > 0) {
-      const icon = { high: '⛔', medium: '⚠', low: '●' };
-      const fix  = { high: 'Critical — change this immediately.', medium: 'Warning — reduces your security score.', low: 'Tip — applying this improves strength.' };
+      const sevLabel = { high: 'Critical', medium: 'Warning', low: 'Tip' };
+      const fix  = { high: 'Change this to significantly improve your security.', medium: 'Addressing this reduces your vulnerability.', low: 'Applying this will improve your overall strength.' };
       issuesList.innerHTML = issues.map((i, idx) => `
         <button class="vz-itile vz-itile-${i.sev}" data-idx="${idx}" type="button" aria-label="${i.title}">
-          <span class="vz-itile-icon" aria-hidden="true">${icon[i.sev] || '⚠'}</span>
           <span class="vz-itile-label">${i.title}</span>
           <div class="vz-itile-tip" role="tooltip">
-            <div class="vz-tip-header vz-tip-${i.sev}">${i.title}</div>
+            <div class="vz-tip-header vz-tip-${i.sev}">${sevLabel[i.sev]}: ${i.title}</div>
             <div class="vz-tip-body">${i.reason}</div>
             <div class="vz-tip-fix">${fix[i.sev]}</div>
           </div>
@@ -799,7 +798,7 @@
 
       <div class="vz-gen-trigger-row">
         <button class="btn-gen-trigger" style="display:none" aria-label="Open password generator">
-          ✨ Generate Password
+          Generate Password
         </button>
       </div>
 
@@ -839,7 +838,7 @@
         <button class="btn-generate btn-primary">Generate</button>
         <button class="btn-regen" hidden>Regenerate</button>
         <button class="btn-copy"  hidden>Copy</button>
-        <button class="btn-apply btn-apply-style" hidden disabled>✓ Use Password</button>
+        <button class="btn-apply btn-apply-style" hidden disabled>Use Password</button>
       </div>
 
     </div>`;
@@ -1040,24 +1039,33 @@
       .vz-itile:hover  { transform: translateY(-1px); }
       .vz-itile:active { transform: scale(0.97); }
 
-      /* Severity colours */
+      /* Severity colours + left-border accent */
       .vz-itile-high {
-        background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3);
-        color: #fca5a5;
+        background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.3);
+        color: #fca5a5; border-left-color: rgba(239,68,68,0.7); border-left-width: 2px;
       }
-      .vz-itile-high:hover { box-shadow: 0 0 8px rgba(239,68,68,0.25); }
+      .vz-itile-high:hover { box-shadow: 0 0 8px rgba(239,68,68,0.22); }
       .vz-itile-medium {
-        background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3);
-        color: #fcd34d;
+        background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3);
+        color: #fcd34d; border-left-color: rgba(245,158,11,0.7); border-left-width: 2px;
       }
-      .vz-itile-medium:hover { box-shadow: 0 0 8px rgba(245,158,11,0.25); }
+      .vz-itile-medium:hover { box-shadow: 0 0 8px rgba(245,158,11,0.22); }
       .vz-itile-low {
-        background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25);
-        color: #93c5fd;
+        background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.25);
+        color: #93c5fd; border-left-color: rgba(59,130,246,0.6); border-left-width: 2px;
       }
-      .vz-itile-low:hover { box-shadow: 0 0 8px rgba(59,130,246,0.2); }
+      .vz-itile-low:hover { box-shadow: 0 0 8px rgba(59,130,246,0.18); }
 
-      .vz-itile-icon  { font-size: 9px; flex-shrink: 0; }
+      /* Severity dot via ::before — no emoji needed */
+      .vz-itile::before {
+        content: '';
+        width: 5px; height: 5px; border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .vz-itile-high::before   { background: #ef4444; }
+      .vz-itile-medium::before { background: #f59e0b; }
+      .vz-itile-low::before    { background: #3b82f6; }
+
       .vz-itile-label { font-size: 10px; }
 
       /* Tooltip — shown on :hover (desktop) or [data-open] (touch) */
