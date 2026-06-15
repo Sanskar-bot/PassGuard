@@ -281,13 +281,13 @@
     }
 
     // Show/hide with the field's focus state.
-    // CRITICAL: use a mousedown flag on the host so that clicking any button
-    // inside the shadow panel does NOT trigger the blur → hide path.
-    // (document.activeElement becomes the shadow HOST when focus moves inside
-    //  the shadow, so shadow.contains(document.activeElement) is always false.)
-    let panelMouseDown = false;
-    host.addEventListener('mousedown', () => { panelMouseDown = true; });
-    host.addEventListener('mouseup',   () => { panelMouseDown = false; });
+    //
+    // KEY TECHNIQUE: pointerdown.preventDefault() on the host tells the browser
+    // "do NOT change focus when this element is clicked".  The password field
+    // stays focused, blur never fires, the panel stays visible.
+    // This is exactly how autocomplete dropdowns and floating pickers work.
+    // The buttons inside the shadow still receive 'click' normally.
+    host.addEventListener('pointerdown', (e) => { e.preventDefault(); });
 
     target.addEventListener('focus', () => {
       host.style.display = '';
@@ -296,11 +296,8 @@
     });
     target.addEventListener('blur', () => {
       setTimeout(() => {
-        // Keep panel open if:
-        //   a) user is clicking something inside the panel (panelMouseDown)
-        //   b) focus moved into the shadow DOM (shadow.activeElement is set)
-        //   c) focus returned to the host element itself
-        if (panelMouseDown || shadow.activeElement || document.activeElement === host) return;
+        // Safety net: hide only if focus truly left both the field and the shadow
+        if (shadow.activeElement || document.activeElement === host) return;
         host.style.display = 'none';
         suppressStrengthWidget(false);
       }, 300);
