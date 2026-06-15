@@ -283,11 +283,16 @@
     // Show/hide with the field's focus state.
     //
     // KEY TECHNIQUE: pointerdown.preventDefault() on the host tells the browser
-    // "do NOT change focus when this element is clicked".  The password field
-    // stays focused, blur never fires, the panel stays visible.
-    // This is exactly how autocomplete dropdowns and floating pickers work.
-    // The buttons inside the shadow still receive 'click' normally.
-    host.addEventListener('pointerdown', (e) => { e.preventDefault(); });
+    // "do NOT change focus when this element is clicked", keeping the password
+    // field focused so blur never fires and the panel stays visible.
+    // EXCEPTION: skip preventDefault when the user clicks the editable password
+    // output field (.vz-gen-pw) so they can click into it and edit the text.
+    host.addEventListener('pointerdown', (e) => {
+      const isEditableField = e.composedPath().some(
+        el => el.classList && el.classList.contains('vz-gen-pw')
+      );
+      if (!isEditableField) e.preventDefault();
+    });
 
     target.addEventListener('focus', () => {
       host.style.display = '';
@@ -296,10 +301,28 @@
     });
     target.addEventListener('blur', () => {
       setTimeout(() => {
-        // Safety net: hide only if focus truly left both the field and the shadow
+        // Keep panel open if focus moved into the shadow (e.g. user editing vz-gen-pw)
+        // shadow.activeElement is non-null whenever any shadow element has focus.
         if (shadow.activeElement || document.activeElement === host) return;
         host.style.display = 'none';
         suppressStrengthWidget(false);
+      }, 300);
+    });
+    // When the user finishes editing vz-gen-pw and clicks back on the page password
+    // field, keep the panel visible and re-suppress the strength widget.
+    el.pw.addEventListener('blur', () => {
+      setTimeout(() => {
+        // If focus went back to the underlying password field, all is fine
+        if (document.activeElement === target) {
+          host.style.display = '';
+          suppressStrengthWidget(true);
+          return;
+        }
+        // Focus left both — hide panel
+        if (!shadow.activeElement && document.activeElement !== host) {
+          host.style.display = 'none';
+          suppressStrengthWidget(false);
+        }
       }, 300);
     });
     if (document.activeElement === target) {
