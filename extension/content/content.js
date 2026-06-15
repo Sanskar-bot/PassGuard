@@ -56,7 +56,12 @@
         import(chrome.runtime.getURL('modules/dictCache.js')),
       ]).then(([detector, website, generator, validator, profileStore, dictCache]) => ({
         detector, website, generator, validator, profileStore, dictCache,
-      }));
+      })).catch((err) => {
+        // Clear so the next focus attempt retries the import chain
+        contextModulesPromise = null;
+        console.warn('[VaultZero] Context module load failed:', err);
+        throw err;
+      });
     }
     return contextModulesPromise;
   }
@@ -83,7 +88,7 @@
   function generatorCSS() {
     return `
       *,*::before,*::after{box-sizing:border-box}
-      .panel{margin-top:7px;padding:10px;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e2e8f0;background:#0b1220;border:1px solid rgba(14,165,233,.35);border-radius:7px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+      .panel{padding:10px;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e2e8f0;background:#0b1220;border:1px solid rgba(14,165,233,.35);border-radius:7px;box-shadow:0 8px 24px rgba(0,0,0,.52)}
       .head,.scores,.actions{display:flex;align-items:center;gap:7px}
       .head{margin-bottom:8px}.title{font-weight:750;flex:1}.context{font-size:10px;color:#7dd3fc}
       .pw{width:100%;min-width:0;padding:8px 9px;border:1px solid #334155;border-radius:5px;background:#020617;color:#f8fafc;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
@@ -99,10 +104,33 @@
     if (generatorMap.has(context.targetField)) return;
 
     const target = context.targetField;
+
+    // Use fixed positioning (same strategy as the strength widget) so the panel
+    // is never clipped by host-page overflow:hidden / flex containers.
     const host = document.createElement('div');
     host.className = '__vz-generator-host';
-    host.style.cssText = 'display:block;width:100%;max-width:440px;position:relative;z-index:2147483646;';
-    target.insertAdjacentElement('afterend', host);
+    host.style.cssText = [
+      'position:fixed',
+      'z-index:2147483646',
+      'pointer-events:all',
+      'left:0',
+      'top:0',
+      'display:none',   // hidden until field is focused
+    ].join(';');
+    document.body.appendChild(host);
+
+    function repositionGenerator() {
+      const rect = target.getBoundingClientRect();
+      if (rect.width === 0) return;
+      host.style.left  = `${rect.left}px`;
+      host.style.top   = `${rect.bottom + 6}px`;
+      const panel = shadow.querySelector('.panel');
+      if (panel) panel.style.width = `${Math.max(rect.width, 320)}px`;
+    }
+
+    window.addEventListener('scroll', repositionGenerator, { passive: true });
+    window.addEventListener('resize', repositionGenerator, { passive: true });
+
     const shadow = host.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
       <style>${generatorCSS()}</style>
@@ -138,8 +166,25 @@
       analyze: shadow.querySelector('.analyze'),
       apply: shadow.querySelector('.apply'),
     };
-    const state = { host, shadow, target, confirmation: context.confirmationField, websiteContext, modules, elements, validation: null };
+    const state = { host, shadow, target, confirmation: context.confirmationField, websiteContext, modules, elements, validation: null, repositionGenerator };
     generatorMap.set(target, state);
+
+    // Show/hide generator when the password field gains/loses focus
+    target.addEventListener('focus', () => {
+      host.style.display = '';
+      repositionGenerator();
+    });
+    target.addEventListener('blur', () => {
+      // Small delay so clicks inside the generator panel are processed first
+      setTimeout(() => {
+        if (!shadow.contains(document.activeElement)) host.style.display = 'none';
+      }, 250);
+    });
+    // If already focused (rare but possible)
+    if (document.activeElement === target) {
+      host.style.display = '';
+      repositionGenerator();
+    }
 
     async function validationOptions() {
       const profile = await modules.profileStore.getProfile() || {};
@@ -226,11 +271,34 @@
     });
   }
 
+  // URL-path keywords that strongly indicate account creation / password reset.
+  // Used as a fallback when SPA frameworks haven't rendered form text into DOM yet.
+  const SIGNUP_PATH_RE = /\/(sign[-_]?up|signup|register|registration|join|create[-_]?account|new[-_]?account|emailsignup|enroll|onboarding|welcome)/i;
+  const CHANGE_PATH_RE = /\/(change[-_]?password|reset[-_]?password|update[-_]?password|forgot[-_]?password|set[-_]?password|recover|password[-_]?reset)/i;
+
   async function scanForContextualGenerators() {
     try {
       const modules = await getContextModules();
-      const context = modules.detector.detectPasswordContext(document);
+      let context = modules.detector.detectPasswordContext(document);
       const websiteContext = modules.website.extractWebsiteContextFromDocument(document, window.location);
+
+      // Boost: if the URL path is a strong signup/change signal but DOM scan missed it,
+      // promote the first visible password field to eligible.
+      if (!context.eligible) {
+        const path = window.location.pathname + window.location.search;
+        const allPw = [...document.querySelectorAll('input[type="password"]')]
+          .filter(el => !el.disabled && el.offsetParent !== null);
+        if (allPw.length > 0) {
+          if (SIGNUP_PATH_RE.test(path)) {
+            context = { type: 'account-creation', eligible: true, targetField: allPw[0],
+              confirmationField: allPw[1] || null, confidence: 'medium', signals: ['url-path'] };
+          } else if (CHANGE_PATH_RE.test(path)) {
+            context = { type: 'password-change', eligible: true, targetField: allPw[0],
+              confirmationField: allPw[1] || null, confidence: 'medium', signals: ['url-path'] };
+          }
+        }
+      }
+
       chrome.runtime.sendMessage({
         type: 'NEW_PASSWORD_CONTEXT',
         context: modules.detector.serializePasswordContext(context),
